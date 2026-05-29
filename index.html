@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Audio Game</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; }
+    button { font-size: 1.1rem; padding: 0.6rem 1.2rem; }
+    #status { margin-top: 1rem; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>Audio Game</h1>
+  <p><strong>Put on headphones.</strong> This game is played entirely by ear.</p>
+  <p>Step 1 test: clicking Start should play a tone that sounds like it's coming from your <em>right</em>.</p>
+  <button id="start">Start</button>
+  <p id="status"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/resonance-audio/build/resonance-audio.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
