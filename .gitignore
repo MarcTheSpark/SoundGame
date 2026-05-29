@@ -1,0 +1,3 @@
+# Local role marker (teacher | student) — tells Claude who it's talking to.
+# Each person sets their own; never committed. See CLAUDE.md.
+.role
