@@ -1,3 +1,22 @@
 # Local role marker (teacher | student) — tells Claude who it's talking to.
 # Each person sets their own; never committed. See CLAUDE.md.
 .role
+
+# Audio files (samples, recordings, exports)
+*.wav
+*.mp3
+*.ogg
+*.flac
+*.aiff
+*.aif
+*.m4a
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
