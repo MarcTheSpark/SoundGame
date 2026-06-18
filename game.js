@@ -1,5 +1,5 @@
 // Step 1: bootstrap AudioContext + Resonance Audio, play one spatialized test tone.
-let ctx, scene, source, osc, lfo;
+let ctx, scene, source, osc, lfo, statusBox;
 
 document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
@@ -8,11 +8,12 @@ let angle = 0;
 function tick() {
   angle += 0.02;
   source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
+  setStatus(angle);
   requestAnimationFrame(tick);
 }
 
 function start() {
-  const status = document.getElementById('status');
+  statusBox = document.getElementById('status');
 
   if (ctx == null) {
     // if context box is empty set it up + the scene
@@ -21,7 +22,11 @@ function start() {
 
   createSource();
 
-  status.textContent = 'Playing test tone — should sound like it is on your right.';
+  setStatus('Playing test tone — should sound like it is on your right.');
+}
+
+function setStatus(statusText) {
+  statusBox.textContent = statusText;
 }
 
 function setup() {
