@@ -63,7 +63,7 @@ function createSource() {
   const lfoDepth = ctx.createGain();
   lfoDepth.gain.value = 0.15;
   lfo.connect(lfoDepth).connect(gain.gain);
-  //lfo.start();
+  lfo.start();
 
   osc.connect(gain).connect(source.input);
   osc.start();
