@@ -42,6 +42,28 @@ function setup() {
   // One Resonance Audio scene per context. Its output is the only thing
   // we connect to ctx.destination; every sound goes through it.
   scene = new ResonanceAudio(ctx);
+  
+  // Define materials for each of the room’s six surfaces.
+  // Room materials have different acoustic reflectivity.
+  let roomMaterials = {
+    // Room wall materials
+    left: 'brick-bare',
+    right: 'curtain-heavy',
+    front: 'marble',
+    back: 'glass-thin',
+    // Room floor
+    down: 'grass',
+    // Room ceiling
+    up: 'transparent',
+  };
+
+  let roomDimensions = {
+    width: 6,
+    height: 3,
+    depth: 6,
+  };
+
+  scene.setRoomProperties(roomDimensions, roomMaterials);
 
   //tale the output of the scene and connect to speakers
   scene.output.connect(ctx.destination);
