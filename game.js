@@ -5,10 +5,15 @@ document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
 
 let angle = 0;
-function tick() {
-  angle += 0.02;
+let t = 0;
+
+function tick(now) {
+  const dt = now - t;  // dt is in milliseconds
+  t = now / 1000;  // t is in seconds
+
+  angle = Math.PI * t;
   source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
-  setStatus(angle);
+  setStatus(dt);
   requestAnimationFrame(tick);
 }
 
