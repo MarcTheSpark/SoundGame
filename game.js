@@ -4,6 +4,13 @@ let ctx, scene, source, osc, lfo;
 document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
 
+let angle = 0;
+function tick() {
+  angle += 0.02;
+  source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
+  requestAnimationFrame(tick);
+}
+
 function start() {
   const status = document.getElementById('status');
 
@@ -55,6 +62,7 @@ function createSource() {
 
   osc.connect(gain).connect(source.input);
   osc.start();
+  tick(); 
 }
 
 function end() {
