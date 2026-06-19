@@ -22,15 +22,17 @@ Runtime layers, top to bottom:
 4. **Audio graph** — one shared `AudioContext`. Resonance Audio owns
    the output: `ResonanceAudio` scene → `ctx.destination`. Every
    sounding object is a small synth subgraph whose final node connects
-   into a `scene.createSource()`. Position updates happen via
-   `source.setPosition(x, y, z)` once (sources are static); listener
-   updates happen every frame.
+   into a `scene.createSource()`. Most sources are static — their
+   position is set once with `source.setPosition(x, y, z)` — but a
+   source *can* move (enemies will, and we already have a saw chord
+   orbiting as a test); a moving source just calls `setPosition` each
+   frame. The listener position and orientation update every frame.
 
 ### Audio graph shape
 
 ```
-[enemy synth voice] ──► ResonanceAudio.Source ──┐
-[enemy synth voice] ──► ResonanceAudio.Source ──┤
+[enemy synth voice] ──► ResonanceAudio.Source ──┐    (moving source)
+[enemy synth voice] ──► ResonanceAudio.Source ──┤    (moving source)
 [exit synth voice]  ──► ResonanceAudio.Source ──┼──► ResonanceAudio scene ──► ctx.destination
 [heartbeat voice]   ──► ResonanceAudio.Source ──┘    (room model + binaural renderer)
 ```
@@ -85,27 +87,39 @@ can confirm before moving on.
 2. **Room model + listener.** Configure room dimensions and materials.
    Add a second test source on the left so the student hears the room
    reflections and the stereo image.
-3. **Exit door voice.** Build the consonant additive synth. Place it
-   at a fixed position in the room. No movement yet — just the
-   attractive anchor sound, spatialized.
-4. **Player movement and rotation.** Arrow-key input, game loop,
-   player `{x, y, heading}` state. Tank controls. Each frame update
-   listener position and orientation. Verify by rotating in place —
-   the exit door should sweep across the stereo field.
-5. **One enemy voice.** Build the dissonant synth. Place one
+3. **Player movement — translation only.** Arrow-key input and the
+   game loop. Track which keys are held in a `keydown`/`keyup` state
+   object; the loop reads it each frame. Player state is just
+   `{x, y}` for now. Map the keys to *world* axes so the coordinates
+   stay obvious: left/right move the listener along ∓x, up/down along
+   ±y. Each frame call `scene.setListenerPosition(player.x, player.y,
+   0)`. Verify against the orbiting saw chord — walking toward and
+   away from it should change its loudness and which ear it favours.
+4. **Tank controls — add rotation.** Add `heading` to player state.
+   Now left/right rotate `heading` instead of strafing, and up/down
+   translate along the facing direction `(sin(heading), cos(heading))`.
+   Each frame, also update the listener orientation from `heading`
+   (forward `(sin, cos, 0)`, up `(0, 0, 1)`). Verify by rotating in
+   place — the saw chord should sweep across the stereo field without
+   the player moving.
+5. **Exit door voice.** Build the consonant additive synth. Place it
+   at a fixed position in the room. No movement — just the attractive
+   anchor sound, spatialized. (We can retire the test saw chord once
+   we have a real source to navigate toward.)
+6. **One enemy voice.** Build the dissonant synth. Place one
    stationary enemy in the room. Verify proximity modulation: gain
    and dissonance rise as the player approaches.
-6. **Enemy movement + multiple enemies.** Give enemies simple velocity
+7. **Enemy movement + multiple enemies.** Give enemies simple velocity
    (bounce off room walls). Spawn 2–3. Confirm the soundscape stays
    legible — the student can still localize the exit.
-7. **Collision: win + lose.** Touching an enemy = instant death (stop
+8. **Collision: win + lose.** Touching an enemy = instant death (stop
    audio, play a short lose sting). Reaching the exit = win (stop
    audio, play a short win sting).
-8. **Health + heartbeat.** Add health state. Enemies within some
+9. **Health + heartbeat.** Add health state. Enemies within some
    radius drain health over time proportional to proximity. Heartbeat
    voice reflects health: tempo speeds up, character degrades near
    zero. Health hitting zero = death.
-9. **Polish pass.** Tune room size, enemy speeds, damage radii,
+10. **Polish pass.** Tune room size, enemy speeds, damage radii,
    heartbeat curve, and synth parameters until the game feels readable
    and tense. Add a brief spoken or tonal intro on Start that
    establishes where the exit is.
