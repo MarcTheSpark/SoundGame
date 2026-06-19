@@ -45,22 +45,24 @@ function setup() {
   
   // Define materials for each of the room’s six surfaces.
   // Room materials have different acoustic reflectivity.
+  // possible materials: 'brick-bare', 'curtain-heavy', 'marble', 'glass-thin', 'grass', 'transparent'
+  let material = 'marble'
   let roomMaterials = {
     // Room wall materials
-    left: 'brick-bare',
-    right: 'curtain-heavy',
-    front: 'marble',
-    back: 'glass-thin',
+    left: material,
+    right: material,
+    front: material,
+    back: material,
     // Room floor
-    down: 'grass',
+    down: material,
     // Room ceiling
-    up: 'transparent',
+    up: material,
   };
 
   let roomDimensions = {
-    width: 6,
-    height: 3,
-    depth: 6,
+    width: 50,
+    height: 30,
+    depth: 50,
   };
 
   scene.setRoomProperties(roomDimensions, roomMaterials);
@@ -82,7 +84,7 @@ function createSource() {
   osc.type = 'sawtooth';
   
   // set the value of the oscillator's frequency t o 440 (A)
-  osc.frequency.value = 440;
+  osc.frequency.value = 200;
 
   // create a gain to make it not full volume
   const gain = ctx.createGain();
