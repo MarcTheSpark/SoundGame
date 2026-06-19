@@ -5,11 +5,13 @@ document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
 
 let angle = 0;
-let t = 0;
+let lastTime;  // timestamp of the previous frame, in seconds; undefined until the first frame runs
 
 function tick(now) {
-  const dt = now - t;  // dt is in milliseconds
-  t = now / 1000;  // t is in seconds
+  // timing calculations
+  const t = now / 1000;
+  const dt = lastTime == null ? 0 : t - lastTime;
+  lastTime = t;
 
   angle = Math.PI * t;
   source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
@@ -101,7 +103,9 @@ function createSource() {
 
   osc.connect(gain).connect(source.input);
   osc.start();
-  tick(); 
+  // Start the loop via rAF so the first call gets a real `now` timestamp
+  // (calling tick() directly would pass undefined → now/1000 = NaN).
+  requestAnimationFrame(tick);
 }
 
 function end() {
