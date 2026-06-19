@@ -70,6 +70,8 @@ function setup() {
 }
 
 function createSource() {
+  const volume = 0.1;
+
   // Place a source 2 meters to the player's right. Resonance axes: +x right, +y forward, +z up.
   source = scene.createSource();
   source.setPosition(2, 0, 0);
@@ -79,18 +81,19 @@ function createSource() {
 
   osc.type = 'sawtooth';
   
-  // set the value of the oscillator's frequency to 440 (A)
+  // set the value of the oscillator's frequency t o 440 (A)
   osc.frequency.value = 440;
 
   // create a gain to make it not full volume
   const gain = ctx.createGain();
   // set it to 15%
-  gain.gain.value = 0.15;
+  gain.gain.value = volume / 2;
 
-  lfo = ctx.createOscillator();//
+  lfo = ctx.createOscillator();
+  lfo.type = 'sawtooth';
   lfo.frequency.value = 4;
   const lfoDepth = ctx.createGain();
-  lfoDepth.gain.value = 0.15;
+  lfoDepth.gain.value = -volume / 2;
   lfo.connect(lfoDepth).connect(gain.gain);
   lfo.start();
 
