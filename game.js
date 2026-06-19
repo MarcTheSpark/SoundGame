@@ -1,5 +1,5 @@
 // Step 1: bootstrap AudioContext + Resonance Audio, play one spatialized test tone.
-let ctx, scene, source, osc, lfo, statusBox;
+let ctx, scene, source, osc, osc2, lfo, statusBox;
 
 document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
@@ -73,6 +73,7 @@ function setup() {
 
 function createSource() {
   const volume = 0.1;
+  const frequency = 200;
 
   // Place a source 2 meters to the player's right. Resonance axes: +x right, +y forward, +z up.
   source = scene.createSource();
@@ -84,7 +85,11 @@ function createSource() {
   osc.type = 'sawtooth';
   
   // set the value of the oscillator's frequency t o 440 (A)
-  osc.frequency.value = 200;
+  osc.frequency.value = frequency;
+
+  osc2 = ctx.createOscillator();
+  osc2.type = 'sawtooth';
+  osc2.frequency.value = frequency * 3 / 2;
 
   // create a gain to make it not full volume
   const gain = ctx.createGain();
@@ -100,10 +105,13 @@ function createSource() {
   lfo.start();
 
   osc.connect(gain).connect(source.input);
+  osc2.connect(gain);
   osc.start();
+  osc2.start();
   tick(); 
 }
 
 function end() {
   osc.stop();
+  osc2.stop();
 }
