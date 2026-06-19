@@ -76,6 +76,8 @@ function createSource() {
 
   // start by asking the context to make a sine oscillator
   osc = ctx.createOscillator();
+
+  osc.type = 'sawtooth';
   
   // set the value of the oscillator's frequency to 440 (A)
   osc.frequency.value = 440;
