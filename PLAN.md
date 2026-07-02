@@ -88,13 +88,41 @@ can confirm before moving on.
    Add a second test source on the left so the student hears the room
    reflections and the stereo image.
 3. **Player movement — translation only.** Arrow-key input and the
-   game loop. Track which keys are held in a `keydown`/`keyup` state
-   object; the loop reads it each frame. Player state is just
-   `{x, y}` for now. Map the keys to *world* axes so the coordinates
-   stay obvious: left/right move the listener along ∓x, up/down along
-   ±y. Each frame call `scene.setListenerPosition(player.x, player.y,
-   0)`. Verify against the orbiting saw chord — walking toward and
-   away from it should change its loudness and which ear it favours.
+   game loop. Player state is just `{x, y}` for now; movement maps to
+   *world* axes so the coordinates stay obvious (left/right along ∓x,
+   up/down along ±y). Broken into small, individually-confirmable
+   substeps:
+
+   1. **Meet event listeners (just prints, no game yet).** Add
+      `keydown`/`keyup` listeners that only `console.log` which key
+      fired and whether it was a press or release. Goal is purely to
+      *see* how the browser delivers input: press a key and watch one
+      `down` fire, then — if you keep holding — the OS auto-repeat
+      starts firing more `down` events at its own cadence; release and
+      you get a single `up`. This makes the case for the next substep
+      concrete: the raw event stream is irregular and can't drive
+      smooth motion on its own.
+   2. **Record held keys.** Replace the logs with a `keys = {}` object.
+      `keydown` sets `keys[e.key] = true`, `keyup` sets it `false`. The
+      handlers do *nothing else* — they only record state. (Convention:
+      input handlers never move the player; the loop does.) Confirm by
+      logging the object and watching flags flip, including two keys
+      held at once.
+   3. **Game loop with dt.** Start a `requestAnimationFrame` loop that
+      computes `dt` — seconds since the previous frame — from the
+      timestamp it's handed. Log dt for a moment to see it settle
+      around ~0.016 s. dt is what makes movement speed independent of
+      frame rate.
+   4. **Move from state × dt.** In the loop, read the held-keys flags
+      and update `player.x`/`player.y` by `speed * dt` on the mapped
+      world axes. Holding a key now gives smooth continuous motion, and
+      two keys held give diagonal movement for free — both consequences
+      of reading state each frame rather than moving in the handler.
+   5. **Drive the listener.** Each frame call
+      `scene.setListenerPosition(player.x, player.y, 0)`.
+
+   Verify against the orbiting saw chord — walking toward and away from
+   it should change its loudness and which ear it favours.
 4. **Tank controls — add rotation.** Add `heading` to player state.
    Now left/right rotate `heading` instead of strafing, and up/down
    translate along the facing direction `(sin(heading), cos(heading))`.
