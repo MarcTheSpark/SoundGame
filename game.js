@@ -1,8 +1,23 @@
 // Step 1: bootstrap AudioContext + Resonance Audio, play one spatialized test tone.
 let ctx, scene, source, osc, osc2, lfo, statusBox;
+let keys = {};
+
 
 document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
+
+window.addEventListener('keydown', (e) => {
+  keys[e.key] = true;
+  setStatus(`Key object ${JSON.stringify(keys)}`);
+});
+
+
+window.addEventListener('keyup', (e) => {
+  keys[e.key] = false;
+  setStatus(`Key object ${JSON.stringify(keys)}`);
+});
+
+// ...and the matching one for 'keyup'
 
 let angle = 0;
 let lastTime;  // timestamp of the previous frame, in seconds; undefined until the first frame runs
@@ -15,7 +30,7 @@ function tick(now) {
 
   angle = Math.PI * t;
   source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
-  setStatus(dt);
+  // setStatus(dt);
   requestAnimationFrame(tick);
 }
 
