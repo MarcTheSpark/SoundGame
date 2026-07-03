@@ -48,6 +48,8 @@ function tick(now) {
   
   setStatus(`player position ${JSON.stringify(player)}`);
 
+  scene.setListenerPosition(player.x, player.y, 0);
+
   angle = Math.PI * t;
   source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
   // setStatus(dt);
