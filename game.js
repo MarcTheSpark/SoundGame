@@ -85,7 +85,7 @@ function setup() {
   // Define materials for each of the room’s six surfaces.
   // Room materials have different acoustic reflectivity.
   // possible materials: 'brick-bare', 'curtain-heavy', 'marble', 'glass-thin', 'grass', 'transparent'
-  let material = 'marble'
+  let material = 'curtain-heavy'
   let roomMaterials = {
     // Room wall materials
     left: material,
@@ -99,9 +99,9 @@ function setup() {
   };
 
   let roomDimensions = {
-    width: 50,
-    height: 30,
-    depth: 50,
+    width: 10,
+    height: 10,
+    depth: 3,
   };
 
   scene.setRoomProperties(roomDimensions, roomMaterials);
@@ -117,6 +117,7 @@ function createSource() {
   // Place a source 2 meters to the player's right. Resonance axes: +x right, +y forward, +z up.
   source = scene.createSource();
   source.setPosition(2, 0, 0);
+  source.setMaxDistance(15);
 
   // start by asking the context to make a sine oscillator
   osc = ctx.createOscillator();
