@@ -2,20 +2,22 @@
 let ctx, scene, source, osc, osc2, lfo, statusBox;
 let keys = {};
 
+let player = { x: 0, y: 0 };
+const speed = 3; // meters per second
+
 
 document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
 
 window.addEventListener('keydown', (e) => {
   keys[e.key] = true;
-  setStatus(`Key object ${JSON.stringify(keys)}`);
 });
 
 
 window.addEventListener('keyup', (e) => {
   keys[e.key] = false;
-  setStatus(`Key object ${JSON.stringify(keys)}`);
 });
+
 
 // ...and the matching one for 'keyup'
 
@@ -27,6 +29,24 @@ function tick(now) {
   const t = now / 1000;
   const dt = lastTime == null ? 0 : t - lastTime;
   lastTime = t;
+  
+  if (keys['ArrowUp']) {
+    player.y += speed * dt;
+  }
+
+  if (keys['ArrowDown']) {
+    player.y -= speed * dt;
+  }
+
+  if (keys['ArrowLeft']) {
+    player.x -= speed * dt;
+  }
+
+  if (keys['ArrowRight']) {
+    player.x += speed * dt;
+  }
+  
+  setStatus(`player position ${JSON.stringify(player)}`);
 
   angle = Math.PI * t;
   source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
