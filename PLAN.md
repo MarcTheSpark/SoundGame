@@ -12,8 +12,10 @@ Runtime layers, top to bottom:
 2. **Game state** — player `{x, y, heading}`, list of enemies
    `[{x, y, vx, vy, voice}]`, exit `{x, y, voice}`, player `health`
    (0–1), and `status` (`playing`, `won`, `dead`). Coordinates are in
-   meters in a single 2D plane (x left/right, y forward/back); the z
-   axis Resonance expects is always 0.
+   meters in a single 2D floor plane (x left/right, y forward/back).
+   Resonance uses a different convention — its floor is the x–z plane
+   and +y is up — so game `(x, y)` maps to Resonance `(x, 0, y)`, and
+   the Resonance height axis is always 0.
 3. **Game loop** — `requestAnimationFrame`, dt from the timestamp. Each
    frame: read held keys, update player heading and position, integrate
    enemy positions, check collisions, update listener position and
@@ -26,7 +28,11 @@ Runtime layers, top to bottom:
    position is set once with `source.setPosition(x, y, z)` — but a
    source *can* move (enemies will, and we already have a saw chord
    orbiting as a test); a moving source just calls `setPosition` each
-   frame. The listener position and orientation update every frame.
+   frame. Voices are built by a `makeVoice`-style factory and kept in
+   an array, each exposing the same small interface (`setPosition`,
+   `setActive`, `stop`) so the loop can treat them uniformly — closures,
+   not classes. The listener position and orientation update every
+   frame.
 
 ### Audio graph shape
 
@@ -48,13 +54,13 @@ but not washed-out.
 
 ### Listener: moving and rotating
 
-Each frame:
-- `scene.setListenerPosition(player.x, player.y, 0)`
+Each frame (remember game `(x, y)` → Resonance `(x, 0, y)`; +y is up):
+- `scene.setListenerPosition(player.x, 0, player.y)`
 - update listener orientation from `player.heading` (forward vector
-  `(sin(heading), cos(heading), 0)`, up vector `(0, 0, 1)`)
+  `(cos(heading), 0, sin(heading))`, up vector `(0, 1, 0)`)
 
 Tank controls: left/right rotate `heading`, up/down translate along
-`(sin(heading), cos(heading))`. Rotation matters for an audio-only
+`(cos(heading), sin(heading))` in the floor plane. Rotation matters for an audio-only
 game — turning the head and hearing how a source's apparent position
 shifts is the core binaural localization cue, so the player needs the
 ability to do it deliberately.
@@ -119,35 +125,77 @@ can confirm before moving on.
       two keys held give diagonal movement for free — both consequences
       of reading state each frame rather than moving in the handler.
    5. **Drive the listener.** Each frame call
-      `scene.setListenerPosition(player.x, player.y, 0)`.
+      `scene.setListenerPosition(player.x, 0, player.y)` (game y → the
+      Resonance z/floor axis; Resonance's y is height, always 0).
 
    Verify against the orbiting saw chord — walking toward and away from
    it should change its loudness and which ear it favours.
-4. **Tank controls — add rotation.** Add `heading` to player state.
-   Now left/right rotate `heading` instead of strafing, and up/down
-   translate along the facing direction `(sin(heading), cos(heading))`.
-   Each frame, also update the listener orientation from `heading`
-   (forward `(sin, cos, 0)`, up `(0, 0, 1)`). Verify by rotating in
-   place — the saw chord should sweep across the stereo field without
-   the player moving.
-5. **Exit door voice.** Build the consonant additive synth. Place it
+4. **Tank controls — rotation and facing-relative movement.** Add
+   `heading` to player state; left/right rotate `heading` instead of
+   strafing, and each frame update the listener orientation from
+   `heading` (forward `(cos(heading), 0, sin(heading))`, up `(0, 1, 0)`
+   — the x–z floor, +y up). Two substeps:
+
+   1. **Rotation + listener orientation** *(done)*. Left/right turn the
+      heading and the listener sweeps. Verify by rotating in place — the
+      saw chord crosses the stereo field without the player moving.
+   2. **Facing-relative movement** *(do this next, before step 5)*.
+      Up/down currently change `player.y` alone, so movement is locked
+      to the world y axis and ignores `heading`; it only *looks* like
+      tank controls because the start heading `π/2` happens to point
+      along +y, so the two coincide until you turn. Change up/down to
+      translate along the facing direction:
+      `player.x += Math.cos(heading) * speed * dt` and
+      `player.y += Math.sin(heading) * speed * dt` (down negates both).
+      Verify by turning ~90° first, then holding up — you should move
+      toward whatever you're now facing, not back along +y.
+
+5. **Multiple sources — a voice factory.** Not tied to gameplay yet;
+   the goal is to go from one hard-coded source to a small, uniform
+   collection we can grow. Broken into substeps:
+
+   1. **Factory instead of globals.** Generalize `createSource` into
+      `makeVoice(config)` that builds one synth subgraph plus its
+      Resonance source and *returns a plain object*, rather than
+      assigning module-level `source`/`osc`/… globals. Keep the voices
+      in a `voices` array. Rebuild the current saw chord through the
+      factory and confirm nothing changed audibly.
+   2. **A second voice.** Create a second, identical voice at a
+      different position. Iterate `voices` each frame for anything
+      per-source. Confirm you can localize both at once — one to the
+      left, one to the right.
+   3. **Agree the shared shape.** Give every voice the same tiny
+      interface — `setPosition(x, z)`, `setActive(on)`, `stop()` — and
+      wire a key (or a button per voice) to toggle `setActive`. Needing
+      on/off is what forces the interface to exist; once it does, the
+      loop can treat every voice identically. Use factory functions with
+      closures, not classes: the returned object closes over its nodes,
+      so there is no `this` to lose when a method is passed as a
+      callback (see the class-free note in CLAUDE.md).
+   4. **Different synthesis behind the same shape.** Swap the second
+      voice's synthesis for a different technique (e.g. FM, or filtered
+      noise) without changing its interface. `makeSawVoice` and
+      `makeFmVoice` now return the same shape — the payoff of fixing the
+      interface first, and the bridge to the real game voices below,
+      which are just specific voice factories.
+6. **Exit door voice.** Build the consonant additive synth. Place it
    at a fixed position in the room. No movement — just the attractive
    anchor sound, spatialized. (We can retire the test saw chord once
    we have a real source to navigate toward.)
-6. **One enemy voice.** Build the dissonant synth. Place one
+7. **One enemy voice.** Build the dissonant synth. Place one
    stationary enemy in the room. Verify proximity modulation: gain
    and dissonance rise as the player approaches.
-7. **Enemy movement + multiple enemies.** Give enemies simple velocity
+8. **Enemy movement + multiple enemies.** Give enemies simple velocity
    (bounce off room walls). Spawn 2–3. Confirm the soundscape stays
    legible — the student can still localize the exit.
-8. **Collision: win + lose.** Touching an enemy = instant death (stop
+9. **Collision: win + lose.** Touching an enemy = instant death (stop
    audio, play a short lose sting). Reaching the exit = win (stop
    audio, play a short win sting).
-9. **Health + heartbeat.** Add health state. Enemies within some
+10. **Health + heartbeat.** Add health state. Enemies within some
    radius drain health over time proportional to proximity. Heartbeat
    voice reflects health: tempo speeds up, character degrades near
    zero. Health hitting zero = death.
-10. **Polish pass.** Tune room size, enemy speeds, damage radii,
+11. **Polish pass.** Tune room size, enemy speeds, damage radii,
    heartbeat curve, and synth parameters until the game feels readable
    and tense. Add a brief spoken or tonal intro on Start that
    establishes where the exit is.
