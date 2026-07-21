@@ -50,11 +50,13 @@ function tick(now) {
   
   setStatus(`player position ${JSON.stringify(player)}`);
 
-  scene.setListenerPosition(player.x, player.y, 0);
-  scene.setListenerOrientation(Math.cos(player.heading), Math.sin(player.heading), 0,  0, 0, 1);
+  // Note that Resonance uses y as up and x/z as floor position
+  scene.setListenerPosition(player.x, 0, player.y);
+  scene.setListenerOrientation(Math.cos(player.heading), 0, Math.sin(player.heading),  0, 1, 0);
 
   angle = Math.PI * t;
-  source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
+  // moves in a circle on the x-z plain (the two ground axes)
+  source.setPosition(Math.sin(angle) * 2, 0, Math.cos(angle) * 2);
   // setStatus(dt);
   requestAnimationFrame(tick);
 }
@@ -88,7 +90,7 @@ function setup() {
   // Define materials for each of the room’s six surfaces.
   // Room materials have different acoustic reflectivity.
   // possible materials: 'brick-bare', 'curtain-heavy', 'marble', 'glass-thin', 'grass', 'transparent'
-  let material = 'curtain-heavy'
+  let material = 'grass'
   let roomMaterials = {
     // Room wall materials
     left: material,
@@ -103,8 +105,8 @@ function setup() {
 
   let roomDimensions = {
     width: 10,
-    height: 10,
-    depth: 3,
+    height: 3,
+    depth: 10,
   };
 
   scene.setRoomProperties(roomDimensions, roomMaterials);
@@ -117,7 +119,8 @@ function createSource() {
   const volume = 0.1;
   const frequency = 200;
 
-  // Place a source 2 meters to the player's right. Resonance axes: +x right, +y forward, +z up.
+  // Place a source 2 meters to the player's right. 
+  // Resonance axes: +x right, +y up, +z depth (front/back).
   source = scene.createSource();
   source.setPosition(2, 0, 0);
   source.setMaxDistance(15);
