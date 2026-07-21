@@ -2,8 +2,10 @@
 let ctx, scene, source, osc, osc2, lfo, statusBox;
 let keys = {};
 
-let player = { x: 0, y: 0 };
+//start facing forward
+let player = { x: 0, y: 0, heading: Math.PI / 2};
 const speed = 3; // meters per second
+const turnspeed = 2;
 
 
 document.getElementById('start').addEventListener('click', start);
@@ -39,16 +41,17 @@ function tick(now) {
   }
 
   if (keys['ArrowLeft']) {
-    player.x -= speed * dt;
+    player.heading -= turnspeed * dt;
   }
 
   if (keys['ArrowRight']) {
-    player.x += speed * dt;
+    player.heading += turnspeed * dt;
   }
   
   setStatus(`player position ${JSON.stringify(player)}`);
 
   scene.setListenerPosition(player.x, player.y, 0);
+  scene.setListenerOrientation(Math.cos(player.heading), Math.sin(player.heading), 0,  0, 0, 1);
 
   angle = Math.PI * t;
   source.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2, 0);
