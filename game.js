@@ -33,11 +33,13 @@ function tick(now) {
   lastTime = t;
   
   if (keys['ArrowUp']) {
-    player.y += speed * dt;
+    player.x += speed * dt * Math.cos(player.heading);
+    player.y += speed * dt * Math.sin(player.heading);
   }
 
   if (keys['ArrowDown']) {
-    player.y -= speed * dt;
+    player.x -= speed * dt * Math.cos(player.heading);
+    player.y -= speed * dt * Math.sin(player.heading);
   }
 
   if (keys['ArrowLeft']) {
