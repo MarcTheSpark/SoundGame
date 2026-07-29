@@ -43,11 +43,11 @@ function tick(now) {
   }
 
   if (keys['ArrowLeft']) {
-    player.heading -= turnspeed * dt;
+    player.heading += turnspeed * dt;
   }
 
   if (keys['ArrowRight']) {
-    player.heading += turnspeed * dt;
+    player.heading -= turnspeed * dt;
   }
   
   setStatus(`player position ${JSON.stringify(player)}`);
