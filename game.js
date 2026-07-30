@@ -1,5 +1,5 @@
 // Step 1: bootstrap AudioContext + Resonance Audio, play one spatialized test tone.
-let ctx, scene, source, osc, osc2, lfo, statusBox;
+let ctx, scene, sawVoice, statusBox;
 let keys = {};
 
 //start facing forward
@@ -58,7 +58,7 @@ function tick(now) {
 
   angle = Math.PI * t;
   // moves in a circle on the x-z plain (the two ground axes)
-  source.setPosition(Math.sin(angle) * 2, 0, Math.cos(angle) * 2);
+  sawVoice.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2);
   // setStatus(dt);
   requestAnimationFrame(tick);
 }
@@ -70,9 +70,12 @@ function start() {
     // if context box is empty set it up + the scene
     setup();
   }
-
-  createSource();
-
+  
+  if(sawVoice != null){
+    sawVoice.stop();
+  }
+  sawVoice = makeSawVoice(200);
+  requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
 }
 
@@ -117,25 +120,24 @@ function setup() {
   scene.output.connect(ctx.destination);
 }
 
-function createSource() {
+function makeSawVoice(frequency){
   const volume = 0.1;
-  const frequency = 200;
 
   // Place a source 2 meters to the player's right. 
   // Resonance axes: +x right, +y up, +z depth (front/back).
-  source = scene.createSource();
+  const source = scene.createSource();
   source.setPosition(2, 0, 0);
   source.setMaxDistance(15);
 
   // start by asking the context to make a sine oscillator
-  osc = ctx.createOscillator();
+  const osc = ctx.createOscillator();
 
   osc.type = 'sawtooth';
   
   // set the value of the oscillator's frequency t o 440 (A)
   osc.frequency.value = frequency;
 
-  osc2 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
   osc2.type = 'sawtooth';
   osc2.frequency.value = frequency * 3 / 2;
 
@@ -144,7 +146,7 @@ function createSource() {
   // set it to 15%
   gain.gain.value = volume / 2;
 
-  lfo = ctx.createOscillator();
+  const lfo = ctx.createOscillator();
   lfo.type = 'sawtooth';
   lfo.frequency.value = 4;
   const lfoDepth = ctx.createGain();
@@ -156,12 +158,21 @@ function createSource() {
   osc2.connect(gain);
   osc.start();
   osc2.start();
-  // Start the loop via rAF so the first call gets a real `now` timestamp
-  // (calling tick() directly would pass undefined → now/1000 = NaN).
-  requestAnimationFrame(tick);
+
+  return{
+    setPosition(x, z){
+      source.setPosition(x,0,z);
+    },
+    stop(){
+      osc.stop();
+      osc2.stop();
+      lfo.stop();
+
+    }
+  };
+
 }
 
-function end() {
-  osc.stop();
-  osc2.stop();
+function end(){
+  sawVoice.stop();
 }
