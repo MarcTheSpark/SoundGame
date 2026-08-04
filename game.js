@@ -1,5 +1,5 @@
 // Step 1: bootstrap AudioContext + Resonance Audio, play one spatialized test tone.
-let ctx, scene, sawVoice, statusBox;
+let ctx, scene, sawVoice, sawVoice2, statusBox;
 let keys = {};
 
 //start facing forward
@@ -56,7 +56,8 @@ function tick(now) {
   scene.setListenerOrientation(Math.cos(player.heading), 0, Math.sin(player.heading),  0, 1, 0);
 
   // moves in a circle on the x-z plain (the two ground axes)
-  sawVoice.setPosition(Math.sin(Math.PI * t) * 2, Math.cos(Math.PI * t) * 2);
+  sawVoice.setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
+  sawVoice2.setPosition(-Math.cos(Math.PI * t / 2) * 2,-Math.sin(Math.PI * t / 2) * 2);
   // setStatus(dt);
   requestAnimationFrame(tick);
 }
@@ -71,8 +72,10 @@ function start() {
   
   if(sawVoice != null){
     sawVoice.stop();
+    sawVoice2.stop();
   }
   sawVoice = makeSawVoice(200);
+  sawVoice2 = makeSawVoice(350);
   requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
 }
@@ -173,4 +176,5 @@ function makeSawVoice(frequency){
 
 function end(){
   sawVoice.stop();
+  sawVoice2.stop();
 }
