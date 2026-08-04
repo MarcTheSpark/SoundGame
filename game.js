@@ -23,7 +23,6 @@ window.addEventListener('keyup', (e) => {
 
 // ...and the matching one for 'keyup'
 
-let angle = 0;
 let lastTime;  // timestamp of the previous frame, in seconds; undefined until the first frame runs
 
 function tick(now) {
@@ -56,9 +55,8 @@ function tick(now) {
   scene.setListenerPosition(player.x, 0, player.y);
   scene.setListenerOrientation(Math.cos(player.heading), 0, Math.sin(player.heading),  0, 1, 0);
 
-  angle = Math.PI * t;
   // moves in a circle on the x-z plain (the two ground axes)
-  sawVoice.setPosition(Math.sin(angle) * 2, Math.cos(angle) * 2);
+  sawVoice.setPosition(Math.sin(Math.PI * t) * 2, Math.cos(Math.PI * t) * 2);
   // setStatus(dt);
   requestAnimationFrame(tick);
 }
