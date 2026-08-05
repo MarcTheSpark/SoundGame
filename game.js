@@ -48,6 +48,20 @@ function tick(now) {
   if (keys['ArrowRight']) {
     player.heading -= turnspeed * dt;
   }
+
+  if (keys['1']) {
+    sawVoice.setActive(true);
+  }
+  if (keys['2']) {
+    sawVoice.setActive(false);
+  }
+  if (keys['3']) {
+    sawVoice2.setActive(true);
+  }
+  if (keys['4']) {
+    sawVoice2.setActive(false);
+  }
+
   
   setStatus(`player position ${JSON.stringify(player)}`);
 
@@ -122,13 +136,14 @@ function setup() {
 }
 
 function makeSawVoice(frequency){
-  const volume = 0.1;
+  let volume = 0.1;
 
   // Place a source 2 meters to the player's right. 
   // Resonance axes: +x right, +y up, +z depth (front/back).
   const source = scene.createSource();
   source.setPosition(2, 0, 0);
   source.setMaxDistance(15);
+  source.setGain(volume);
 
   // start by asking the context to make a sine oscillator
   const osc = ctx.createOscillator();
@@ -145,13 +160,13 @@ function makeSawVoice(frequency){
   // create a gain to make it not full volume
   const gain = ctx.createGain();
   // set it to 15%
-  gain.gain.value = volume / 2;
+  gain.gain.value = 0.5;
 
   const lfo = ctx.createOscillator();
   lfo.type = 'sawtooth';
   lfo.frequency.value = 4;
   const lfoDepth = ctx.createGain();
-  lfoDepth.gain.value = -volume / 2;
+  lfoDepth.gain.value = -0.5;
   lfo.connect(lfoDepth).connect(gain.gain);
   lfo.start();
 
@@ -163,6 +178,15 @@ function makeSawVoice(frequency){
   return{
     setPosition(x, z){
       source.setPosition(x,0,z);
+    },
+
+    setActive(active){
+      if(active){
+        source.setGain(volume);
+      }else{
+        source.setGain(0);
+      }
+
     },
     stop(){
       osc.stop();
