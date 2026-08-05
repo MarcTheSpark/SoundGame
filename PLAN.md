@@ -199,3 +199,29 @@ can confirm before moving on.
    heartbeat curve, and synth parameters until the game feels readable
    and tense. Add a brief spoken or tonal intro on Start that
    establishes where the exit is.
+
+## Aside: faked air absorption (drop-in, independent of the steps)
+
+Real air swallows high frequencies over distance, so far sources sound
+*duller*, not just quieter — a strong distance cue. Resonance's distance
+model is a single broadband gain and misses this. `air-absorption.js`
+fakes it by splicing a lowpass filter in front of every source and
+lowering its cutoff with distance. It's deliberately kept out of the
+main build order — it's plumbing we wish Resonance had, not a concept
+the game code should carry — so the game code never sees it.
+
+Two lines to wire it in, both invisible to the rest of `game.js`:
+
+1. **Import** — add `<script src="air-absorption.js"></script>` in
+   `index.html`, *before* `game.js` so the function exists when `setup()`
+   runs.
+2. **Install** — call `installAirAbsorption(scene, ctx)` once inside
+   `setup()`, right after the scene is created and *before* any
+   `createSource()` calls (so every source gets patched). A third
+   options argument tunes the effect: `far` (cutoff at max distance —
+   how *much* it darkens) and `curve` (how *fast* it darkens with
+   distance), e.g. `installAirAbsorption(scene, ctx, { far: 1500,
+   curve: 2 })`.
+
+After that, `createSource`, `setPosition`, and `.connect(source.input)`
+work exactly as before; the darkening-with-distance just happens.
