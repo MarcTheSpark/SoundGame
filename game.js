@@ -99,6 +99,7 @@ function setStatus(statusText) {
 }
 
 function setup() {
+
   // AudioContext must be created inside a user-gesture handler so the browser allows audio
   // this is called from start() which is a button click
   ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -106,6 +107,8 @@ function setup() {
   // One Resonance Audio scene per context. Its output is the only thing
   // we connect to ctx.destination; every sound goes through it.
   scene = new ResonanceAudio(ctx);
+
+  installAirAbsorption(scene, ctx);
   
   // Define materials for each of the room’s six surfaces.
   // Room materials have different acoustic reflectivity.
