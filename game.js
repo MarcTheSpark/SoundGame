@@ -1,5 +1,5 @@
 // Step 1: bootstrap AudioContext + Resonance Audio, play one spatialized test tone.
-let ctx, scene, sawVoice, sawVoice2, statusBox;
+let ctx, scene, voices = [], statusBox;
 let keys = {};
 
 //start facing forward
@@ -50,16 +50,16 @@ function tick(now) {
   }
 
   if (keys['1']) {
-    sawVoice.setActive(true);
+    voices[0].setActive(true);
   }
   if (keys['2']) {
-    sawVoice.setActive(false);
+    voices[0].setActive(false);
   }
   if (keys['3']) {
-    sawVoice2.setActive(true);
+    voices[1].setActive(true);
   }
   if (keys['4']) {
-    sawVoice2.setActive(false);
+    voices[1].setActive(false);
   }
 
   
@@ -70,8 +70,8 @@ function tick(now) {
   scene.setListenerOrientation(Math.cos(player.heading), 0, Math.sin(player.heading),  0, 1, 0);
 
   // moves in a circle on the x-z plain (the two ground axes)
-  sawVoice.setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
-  sawVoice2.setPosition(-Math.cos(Math.PI * t / 2) * 2,-Math.sin(Math.PI * t / 2) * 2);
+  voices[0].setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
+  voices[1].setPosition(-Math.cos(Math.PI * t / 2) * 2,-Math.sin(Math.PI * t / 2) * 2);
   // setStatus(dt);
   requestAnimationFrame(tick);
 }
@@ -84,12 +84,10 @@ function start() {
     setup();
   }
   
-  if(sawVoice != null){
-    sawVoice.stop();
-    sawVoice2.stop();
-  }
-  sawVoice = makeSawVoice(200);
-  sawVoice2 = makeSawVoice(350);
+  voices.forEach((voice) => voice.stop());
+
+  voices = [makeSawVoice(200), makeSawVoice(350)]
+
   requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
 }
@@ -202,6 +200,5 @@ function makeSawVoice(frequency){
 }
 
 function end(){
-  sawVoice.stop();
-  sawVoice2.stop();
+  voices.forEach((voice) => voice.stop());
 }
