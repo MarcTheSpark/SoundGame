@@ -205,8 +205,9 @@ can confirm before moving on.
 Real air swallows high frequencies over distance, so far sources sound
 *duller*, not just quieter — a strong distance cue. Resonance's distance
 model is a single broadband gain and misses this. `air-absorption.js`
-fakes it by splicing a lowpass filter in front of every source and
-lowering its cutoff with distance. It's deliberately kept out of the
+fakes it by splicing a high-shelf filter in front of every source and
+deepening its treble cut with distance (a fixed corner, so nothing
+sweeps and there's no filter whistle to hear). It's deliberately kept out of the
 main build order — it's plumbing we wish Resonance had, not a concept
 the game code should carry — so the game code never sees it.
 
@@ -217,11 +218,49 @@ Two lines to wire it in, both invisible to the rest of `game.js`:
    runs.
 2. **Install** — call `installAirAbsorption(scene, ctx)` once inside
    `setup()`, right after the scene is created and *before* any
-   `createSource()` calls (so every source gets patched). A third
-   options argument tunes the effect: `far` (cutoff at max distance —
-   how *much* it darkens) and `curve` (how *fast* it darkens with
-   distance), e.g. `installAirAbsorption(scene, ctx, { far: 1500,
-   curve: 2 })`.
+   `createSource()` calls (so every source gets patched). The rolloff
+   distance is read from each source's own `setMaxDistance`, so it needs
+   no configuring. A third options argument tunes the rest: `cut` (dB of
+   treble cut at max distance — how *much* it darkens), `curve` (how
+   *fast* it darkens), `fadeStart` (fraction of max distance where it
+   begins fading to silence), and `reverbFar` (reverb send level at max
+   distance), e.g. `installAirAbsorption(scene, ctx, { cut: 30, curve: 2 })`.
+
+The module also fixes a spatialization quirk: Resonance keeps a source's
+reverb send at full level regardless of distance inside the room, so a far
+source stays wrapped in as much (non-directional) reverb as a near one, its
+direct sound drowns, and turning toward it stops working. `reverbFar` thins
+the reverb send with distance so far sources dry out and stay localizable.
+And `reverbCut` darkens the shared reverb tail with a fixed high-shelf, since
+the tail's long many-bounce paths lose highs regardless of source distance.
 
 After that, `createSource`, `setPosition`, and `.connect(source.input)`
 work exactly as before; the darkening-with-distance just happens.
+
+## Aside: faked front/back cue (drop-in, independent of the steps)
+
+Front/back is the brittlest direction for binaural hearing — the "cone of
+confusion." Left/right timing and level differences are nearly identical
+for a source in front and its mirror behind, so ears resolve front/back
+with outer-ear (pinna) spectral coloring and with head movement. Tank
+rotation already supplies the head-movement cue for free; `front-back.js`
+supplies the missing spectral one, faking a weak generic HRTF's blind spot:
+it splices a light high-shelf (higher corner than the air shelf, ~3.5 kHz)
+in front of every source and deepens its cut as the source swings *behind*
+the listener, so "behind" sounds duller than "in front." Same
+transparent-monkeypatch style as air absorption, kept out of the numbered
+steps for the same reason.
+
+Wiring, again invisible to `game.js`:
+
+1. **Import** — add `<script src="front-back.js"></script>` in `index.html`
+   before `game.js`.
+2. **Install** — call `installFrontBack(scene, ctx)` in `setup()` after the
+   scene is created and before any `createSource()`. It also reads facing,
+   so it wraps `setListenerOrientation` (already called each frame). It
+   composes with `air-absorption.js`: each module prepends its own filter to
+   `source.input`, so a source feeds front-back → air shelf → Resonance.
+   Options: `corner`, `cut` (dB behind you), `smoothing`.
+
+Both modules read the listener each frame through the setters `game.js`
+already calls, so neither adds anything to the game loop.
