@@ -86,7 +86,7 @@ function start() {
   
   voices.forEach((voice) => voice.stop());
 
-  voices = [makeSawVoice(200), makeSawVoice(350)]
+  voices = [makeSawVoice(200),  makeFmVoice(440, 4, 30, 0.3)]
 
   requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
@@ -106,7 +106,8 @@ function setup() {
   // we connect to ctx.destination; every sound goes through it.
   scene = new ResonanceAudio(ctx);
 
-  installAirAbsorption(scene, ctx);
+  installAirAbsorption(scene, ctx, { cut: 30, fadeStart: 0.3, reverbFar: 0, reverbCurve: 0.3 });
+  installFrontBack(scene, ctx);
   
   // Define materials for each of the room’s six surfaces.
   // Room materials have different acoustic reflectivity.
@@ -114,10 +115,10 @@ function setup() {
   let material = 'grass'
   let roomMaterials = {
     // Room wall materials
-    left: material,
-    right: material,
-    front: material,
-    back: material,
+    left: 'transparent',
+    right: 'transparent',
+    front: 'transparent',
+    back: 'transparent',
     // Room floor
     down: material,
     // Room ceiling
@@ -125,9 +126,9 @@ function setup() {
   };
 
   let roomDimensions = {
-    width: 10,
+    width: 100,
     height: 3,
-    depth: 10,
+    depth: 100,
   };
 
   scene.setRoomProperties(roomDimensions, roomMaterials);
@@ -143,7 +144,7 @@ function makeSawVoice(frequency){
   // Resonance axes: +x right, +y up, +z depth (front/back).
   const source = scene.createSource();
   source.setPosition(2, 0, 0);
-  source.setMaxDistance(15);
+  source.setMaxDistance(25);
   source.setGain(volume);
 
   // start by asking the context to make a sine oscillator
@@ -194,6 +195,52 @@ function makeSawVoice(frequency){
       osc2.stop();
       lfo.stop();
 
+    }
+  };
+
+}
+
+function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volume){
+
+  const source = scene.createSource();
+  source.setPosition(2, 0, 0);
+  source.setMaxDistance(25);
+  source.setGain(volume);
+
+
+  const carrier = ctx. createOscillator();
+  const modulator = ctx. createOscillator();
+  const modDepth = ctx. createGain();
+
+  carrier.frequency.value = carrierFrequency;
+  modulator.frequency.value = modulatorFrequency;
+  modDepth.gain.value = modulatorIndex;
+
+
+  modulator.connect(modDepth);
+  modDepth.connect(carrier.frequency);
+
+  carrier.connect(source.input);
+
+  carrier.start();
+  modulator.start();
+
+ return{
+    setPosition(x, z){
+      source.setPosition(x,0,z);
+    },
+
+    setActive(active){
+      if(active){
+        source.setGain(volume);
+      }else{
+        source.setGain(0);
+      }
+
+    },
+    stop(){
+      carrier.stop();
+      modulator.stop();
     }
   };
 
