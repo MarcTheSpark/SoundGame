@@ -26,9 +26,9 @@ Runtime layers, top to bottom:
    sounding object is a small synth subgraph whose final node connects
    into a `scene.createSource()`. Most sources are static — their
    position is set once with `source.setPosition(x, y, z)` — but a
-   source *can* move (enemies will, and we already have a saw chord
-   orbiting as a test); a moving source just calls `setPosition` each
-   frame. Voices are built by a `makeVoice`-style factory and kept in
+   source *can* move (enemies will, and the two test voices, saw and
+   FM, already orbit the origin); a moving source just calls
+   `setPosition` each frame. Voices are built by a `makeVoice`-style factory and kept in
    an array, each exposing the same small interface (`setPosition`,
    `setActive`, `stop`) so the loop can treat them uniformly — closures,
    not classes. The listener position and orientation update every
@@ -37,20 +37,25 @@ Runtime layers, top to bottom:
 ### Audio graph shape
 
 ```
-[enemy synth voice] ──► ResonanceAudio.Source ──┐    (moving source)
-[enemy synth voice] ──► ResonanceAudio.Source ──┤    (moving source)
-[exit synth voice]  ──► ResonanceAudio.Source ──┼──► ResonanceAudio scene ──► ctx.destination
-[heartbeat voice]   ──► ResonanceAudio.Source ──┘    (room model + binaural renderer)
+[enemy loop voice] ──► ResonanceAudio.Source ──┐    (moving source)
+[enemy loop voice] ──► ResonanceAudio.Source ──┤    (moving source)
+[home FM voice]    ──► ResonanceAudio.Source ──┼──► ResonanceAudio scene ──► ctx.destination
+[heartbeat voice]  ──► ResonanceAudio.Source ──┘    (room model + binaural renderer)
 ```
 
-The heartbeat is also spatialized — pinned to the listener's position
-so it feels internal but still benefits from the room.
+The heartbeat is also spatialized, pinned to the listener's position
+so it feels internal.
 
 ### Room model
 
-`scene.setRoomProperties` with a small enclosed room (e.g. 6×6×3 m) and
-moderately reflective materials (wood/plaster) so the space feels real
-but not washed-out.
+The room is a large open field rather than an enclosed room:
+`scene.setRoomProperties` with 100×100×3 m, `transparent` walls (no
+wall reflections), and a `grass` floor and ceiling. An earlier small
+room with reflective walls drowned far sources in non-directional
+reverb, which made them hard to localize. The open field keeps the
+direct sound dominant, and `setMaxDistance(25)` on each source sets
+how far away things can be heard. If some sense of enclosure is wanted
+later, try partially reflective walls during the polish pass (step 11).
 
 ### Listener: moving and rotating
 
@@ -67,14 +72,18 @@ ability to do it deliberately.
 
 ## Sound design intent
 
-- **Enemies** — inharmonic: two or three oscillators at non-integer
-  ratios (e.g. 1 : 1.41 : 2.13), slight detuning to produce beating, a
-  lowpass that opens as the enemy gets closer. Overall gain rises with
-  proximity; an additional dissonance parameter (extra detune or a
-  ring-mod amount) also rises with proximity.
-- **Exit door** — consonant: fundamental plus harmonic partials
-  (1, 2, 3, 4, 5) at decaying amplitudes, gentle slow LFO on a high
-  partial for shimmer. Stable pitch, stable amplitude — a tonal anchor.
+- **Enemies** — sampled, not synthesized: each enemy loops one of the
+  rendered ambience loops in `Sounds/` (`ScaryLoop1-3.wav`, made in
+  REAPER from field recordings). Proximity raises the loop's
+  `playbackRate` from 1× up to 2×, so an approaching enemy speeds up
+  (and, since `playbackRate` doesn't time-stretch, rises in pitch up to
+  an octave), which adds urgency.
+- **Exit door ("home")**: FM, following `Sounds/home_sound.txt`. A sine
+  carrier at 94 Hz is modulated by a sine at 141 Hz (94 × 1.51), and
+  the mod depth rises from 30 (far) to 490 (close), so home gets
+  brighter and richer as you approach. The 1.51 ratio is just off a
+  perfect fifth, so it sits between consonant and strange. This needs
+  `makeFmVoice` from step 5.4, set to these numbers.
 - **Heartbeat** — short low-frequency thump (sine ~50 Hz with a fast
   amp envelope), scheduled on an interval that shortens as health
   drops. Below some health threshold, add a second irregular thump and
@@ -172,22 +181,53 @@ can confirm before moving on.
       closures, not classes: the returned object closes over its nodes,
       so there is no `this` to lose when a method is passed as a
       callback (see the class-free note in CLAUDE.md).
-   4. **Different synthesis behind the same shape.** Swap the second
+   4. **Different synthesis behind the same shape** *(done)*. Swap the second
       voice's synthesis for a different technique (e.g. FM, or filtered
       noise) without changing its interface. `makeSawVoice` and
       `makeFmVoice` now return the same shape — the payoff of fixing the
       interface first, and the bridge to the real game voices below,
       which are just specific voice factories.
-6. **Exit door voice.** Build the consonant additive synth. Place it
-   at a fixed position in the room. No movement — just the attractive
-   anchor sound, spatialized. (We can retire the test saw chord once
-   we have a real source to navigate toward.)
-7. **One enemy voice.** Build the dissonant synth. Place one
-   stationary enemy in the room. Verify proximity modulation: gain
-   and dissonance rise as the player approaches.
-8. **Enemy movement + multiple enemies.** Give enemies simple velocity
-   (bounce off room walls). Spawn 2–3. Confirm the soundscape stays
-   legible — the student can still localize the exit.
+6. **Enemy loop voice** *(next)*. This is a new voice factory,
+   `makeLoopVoice(buffer)`, which plays a sound file instead of
+   synthesizing. It returns the same `setPosition` / `setActive` /
+   `stop` shape. Substeps:
+
+   1. **Load and loop one file.** `fetch` a loop, turn it into an
+      `ArrayBuffer`, `ctx.decodeAudioData` it into an `AudioBuffer`, then
+      play it through an `AudioBufferSourceNode` with `loop = true` →
+      `source.input`. Place it at a fixed position as a stationary
+      enemy. Two new ideas come up here. First, loading is
+      *asynchronous* (`async`/`await`), so the voice can't be built
+      until the buffer arrives. Second, `fetch` doesn't work from a
+      `file://` page, so from now on the game has to be served over
+      `http://localhost` (for example `python3 -m http.server` or VS
+      Code Live Server). Verify by walking toward and around the loop
+      and localizing it.
+   2. **All three loops.** Load `ScaryLoop1-3.wav` (decode each one once
+      and reuse the buffer) and place three stationary enemies at
+      different positions. Confirm you can tell them apart and localize
+      each.
+   3. **Proximity → playback rate.** Each frame, the loop computes the
+      player-to-enemy distance and maps it to a `playbackRate` from 1×
+      (at or beyond some radius) to 2× (touching). This adds one method
+      to the loop voice, e.g. `setProximity(p)` with `p` from 0 to 1.
+      The game loop computes `p`, so the voice doesn't need to know
+      about the player. Ramp the change with `setTargetAtTime` rather
+      than setting `.value` directly, so the rate glides instead of
+      stepping. Verify by approaching an enemy: it should speed up
+      and rise in pitch smoothly.
+7. **Home (exit) voice.** Build the FM home sound from
+   `Sounds/home_sound.txt` with `makeFmVoice`: carrier 94 Hz, modulator
+   141 Hz (94 × 1.51). Place it at a fixed position as the goal.
+   Proximity drives the mod depth from 30 (far) to 490 (close), so home
+   gets brighter as you near it. This is the same pattern as the enemy
+   playback rate: a `setProximity(p)` method, with `p` computed in the
+   game loop and the change ramped with `setTargetAtTime` on the
+   mod-depth gain. Once there's a real source to navigate toward,
+   retire the test saw and FM voices.
+8. **Enemy movement.** Give the three enemies simple velocities (bouncing
+   off the room bounds). Confirm the soundscape stays readable and the
+   player can still localize home through the enemies.
 9. **Collision: win + lose.** Touching an enemy = instant death (stop
    audio, play a short lose sting). Reaching the exit = win (stop
    audio, play a short win sting).
