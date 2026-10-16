@@ -1,0 +1,4 @@
+2 source sine waves, one is 1.51 * freq of the other
+Base freq = 94
+Mod freq = 141 (= 94 * 1.51)
+Mod depth goes from 30 -> 490

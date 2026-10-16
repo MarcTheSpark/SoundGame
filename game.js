@@ -3,7 +3,7 @@ let ctx, scene, voices = [], statusBox;
 let keys = {};
 
 //start facing forward
-let player = { x: 0, y: 0, heading: Math.PI / 2};
+let player = { x: 0, y: -2, heading: Math.PI / 2};
 const speed = 3; // meters per second
 const turnspeed = 2;
 

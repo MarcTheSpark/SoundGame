@@ -22,3 +22,8 @@ desktop.ini
 .idea/
 
 .claude
+
+# REAPER projects (sessions, source media, backups, peaks) — only rendered loops are committed
+Sounds/EnemySound/
+Sounds/Scary sound 1/
+!Sounds/ScaryLoop*.wav
