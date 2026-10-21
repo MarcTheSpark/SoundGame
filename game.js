@@ -1,6 +1,7 @@
 // Step 1: bootstrap AudioContext + Resonance Audio, play one spatialized test tone.
 let ctx, scene, voices = [], statusBox;
 let keys = {};
+let enemyAudioBuffers = [];
 
 //start facing forward
 let player = { x: 0, y: -2, heading: Math.PI / 2};
@@ -76,20 +77,34 @@ function tick(now) {
   requestAnimationFrame(tick);
 }
 
-function start() {
+async function start() {
   statusBox = document.getElementById('status');
 
   if (ctx == null) {
     // if context box is empty set it up + the scene
     setup();
   }
-  
+  await loadEnemyBuffers();
+
+
   voices.forEach((voice) => voice.stop());
 
-  voices = [makeSawVoice(200),  makeFmVoice(440, 4, 30, 0.3)]
+  voices = [makeLoopVoice(enemyAudioBuffers[1]), makeLoopVoice(enemyAudioBuffers[2])];
 
   requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
+}
+
+async function loadEnemyBuffers(){
+  const soundPaths = ["Sounds/ScaryLoop1.wav", "Sounds/ScaryLoop2.wav", "Sounds/ScaryLoop3.wav"];
+
+ for (const soundPath of soundPaths) {
+  const response = await fetch(soundPath);//server response:unopen package
+  const arrayBuffer = await response.arrayBuffer();//open the package get the raw Binary 
+  const buffer = await ctx.decodeAudioData(arrayBuffer);//translate binary to web audio language, (parse metadata)
+  enemyAudioBuffers.push(buffer);//put playable sound data in enemyAudioBuffers
+ }
+
 }
 
 function setStatus(statusText) {
@@ -245,6 +260,39 @@ function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volum
   };
 
 }
+
+function makeLoopVoice(buffer) {
+  let volume = 0.5;
+
+  const source = scene.createSource();
+  source.setPosition(2, 0, 0);
+  source.setMaxDistance(25);
+  source.setGain(volume);
+
+  const loopnode = ctx.createBufferSource();
+  loopnode.buffer = buffer;
+  loopnode.loop = true;
+  loopnode.connect(source.input);
+  loopnode.start();
+
+  return {
+    setPosition(x, z){
+      source.setPosition(x,0,z);
+    },
+
+    setActive(active){
+      if(active){
+        source.setGain(volume);
+      }else{
+        source.setGain(0);
+      }
+    },
+    stop(){
+      loopnode.stop();
+    }
+  };
+}
+
 
 function end(){
   voices.forEach((voice) => voice.stop());
