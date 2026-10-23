@@ -89,14 +89,20 @@ async function start() {
 
   voices.forEach((voice) => voice.stop());
 
-  voices = [makeLoopVoice(enemyAudioBuffers[1]), makeLoopVoice(enemyAudioBuffers[2])];
+  voices = [
+    makeLoopVoice(enemyAudioBuffers[0], [-3.34, -3.74]), 
+    makeLoopVoice(enemyAudioBuffers[1], [5.26, -0.78]), 
+    makeLoopVoice(enemyAudioBuffers[2], [-3.8, 3.67]),
+    makeLoopVoice(enemyAudioBuffers[0], [2.84, 4]),
+    makeLoopVoice(enemyAudioBuffers[3], [5.5, 7.5])
+  ];
 
   requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
 }
 
 async function loadEnemyBuffers(){
-  const soundPaths = ["Sounds/ScaryLoop1.wav", "Sounds/ScaryLoop2.wav", "Sounds/ScaryLoop3.wav"];
+  const soundPaths = ["Sounds/ScaryLoop1.wav", "Sounds/ScaryLoop2.wav", "Sounds/ScaryLoop3.wav", "Sounds/home.mp3"];
 
  for (const soundPath of soundPaths) {
   const response = await fetch(soundPath);//server response:unopen package
@@ -152,13 +158,12 @@ function setup() {
   scene.output.connect(ctx.destination);
 }
 
-function makeSawVoice(frequency){
+function makeSawVoice(frequency,position = [0,0]){
   let volume = 0.1;
-
   // Place a source 2 meters to the player's right. 
   // Resonance axes: +x right, +y up, +z depth (front/back).
   const source = scene.createSource();
-  source.setPosition(2, 0, 0);
+  source.setPosition(position[0],0,position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
@@ -215,10 +220,10 @@ function makeSawVoice(frequency){
 
 }
 
-function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volume){
+function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volume , position = [0,0]){
 
   const source = scene.createSource();
-  source.setPosition(2, 0, 0);
+  source.setPosition(position[0],0,position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
@@ -261,11 +266,11 @@ function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volum
 
 }
 
-function makeLoopVoice(buffer) {
+function makeLoopVoice(buffer, position = [0,0]) {
   let volume = 0.5;
 
   const source = scene.createSource();
-  source.setPosition(2, 0, 0);
+  source.setPosition(position[0],0,position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
