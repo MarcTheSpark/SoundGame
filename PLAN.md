@@ -30,7 +30,7 @@ Runtime layers, top to bottom:
    FM, already orbit the origin); a moving source just calls
    `setPosition` each frame. Voices are built by a `makeVoice`-style factory and kept in
    an array, each exposing the same small interface (`setPosition`,
-   `setActive`, `stop`) so the loop can treat them uniformly — closures,
+   `getPosition`, `setActive`, `stop`) so the loop can treat them uniformly — closures,
    not classes. The listener position and orientation update every
    frame.
 
@@ -187,12 +187,12 @@ can confirm before moving on.
       `makeFmVoice` now return the same shape — the payoff of fixing the
       interface first, and the bridge to the real game voices below,
       which are just specific voice factories.
-6. **Enemy loop voice** *(next)*. This is a new voice factory,
+6. **Enemy loop voice**. This is a new voice factory,
    `makeLoopVoice(buffer)`, which plays a sound file instead of
    synthesizing. It returns the same `setPosition` / `setActive` /
    `stop` shape. Substeps:
 
-   1. **Load and loop one file.** `fetch` a loop, turn it into an
+   1. **Load and loop one file** *(done)*. `fetch` a loop, turn it into an
       `ArrayBuffer`, `ctx.decodeAudioData` it into an `AudioBuffer`, then
       play it through an `AudioBufferSourceNode` with `loop = true` →
       `source.input`. Place it at a fixed position as a stationary
@@ -203,11 +203,41 @@ can confirm before moving on.
       `http://localhost` (for example `python3 -m http.server` or VS
       Code Live Server). Verify by walking toward and around the loop
       and localizing it.
-   2. **All three loops.** Load `ScaryLoop1-3.wav` (decode each one once
+   2. **All three loops** *(done)*. Load `ScaryLoop1-3.wav` (decode each one once
       and reuse the buffer) and place three stationary enemies at
       different positions. Confirm you can tell them apart and localize
       each.
-   3. **Proximity → playback rate.** Each frame, the loop computes the
+   3. **Debug minimap** *(next)*. `minimap.js` is a ready-made widget
+      that draws a top-down view on a `<canvas>`: the player as a blue
+      dot with a heading arrow, enemies in red, and home in gold. The
+      game is played by ear, but seeing the positions lets you check
+      that what you hear matches where things actually are. The widget
+      itself is given. The work is plugging it in, which takes three
+      small changes:
+      - **HTML structure.** In `index.html`, add
+        `<canvas id="minimap" width="320" height="320"></canvas>` where
+        the map should appear. Then add `<script src="minimap.js"></script>`
+        before `game.js`, the same way the other helper scripts load. The
+        widget finds the canvas by its `id`.
+      - **`getPosition()` on every voice.** Resonance sources can be
+        given a position, but they can't report it back, so each voice
+        has to remember its own. Inside each factory, keep a `pos`
+        variable (start it at `position`), update it in `setPosition`,
+        and add a `getPosition()` that returns it as `[x, z]`. This
+        extends the shared interface from step 5.3, and the returned
+        object closes over `pos` exactly as it closes over its audio
+        nodes. Step 6.4 needs `getPosition()` too, to measure distances.
+      - **Draw each frame.** In `tick()`, call
+        `drawMinimap(player, voices, homeIndex)`. Here `homeIndex` is the
+        index of the home voice in `voices`, which is currently `4`.
+      Verify by walking and turning. The blue arrow should point
+      toward whatever you hear in front of you, and as you get closer
+      to a red dot, that enemy should get louder. The map is a true top-down view
+      with +z pointing up, which puts +x on the *left*. If pressing Left
+      turns the arrow clockwise, the turn direction has the wrong sign.
+      Check it by ear: put a sound on your right and press Left. The
+      sound should swing toward the front.
+   4. **Proximity → playback rate.** Each frame, the loop computes the
       player-to-enemy distance and maps it to a `playbackRate` from 1×
       (at or beyond some radius) to 2× (touching). This adds one method
       to the loop voice, e.g. `setProximity(p)` with `p` from 0 to 1.
