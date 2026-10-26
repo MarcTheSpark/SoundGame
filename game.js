@@ -71,8 +71,8 @@ function tick(now) {
   scene.setListenerOrientation(Math.cos(player.heading), 0, Math.sin(player.heading),  0, 1, 0);
 
   // moves in a circle on the x-z plain (the two ground axes)
-  voices[0].setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
-  voices[1].setPosition(-Math.cos(Math.PI * t / 2) * 2,-Math.sin(Math.PI * t / 2) * 2);
+  // voices[0].setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
+  // voices[1].setPosition(-Math.cos(Math.PI * t / 2) * 2,-Math.sin(Math.PI * t / 2) * 2);
   // setStatus(dt);
   requestAnimationFrame(tick);
 }
