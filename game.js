@@ -74,6 +74,9 @@ function tick(now) {
   // voices[0].setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
   // voices[1].setPosition(-Math.cos(Math.PI * t / 2) * 2,-Math.sin(Math.PI * t / 2) * 2);
   // setStatus(dt);
+
+  drawMinimap(player, voices, 4); // 4 = homeIndex, which voice is the home sound
+
   requestAnimationFrame(tick);
 }
 
@@ -200,6 +203,11 @@ function makeSawVoice(frequency,position = [0,0]){
   return{
     setPosition(x, z){
       source.setPosition(x,0,z);
+      position = [x,z];
+    },
+
+    getPosition(){
+      return position;
     },
 
     setActive(active){
@@ -248,6 +256,11 @@ function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volum
  return{
     setPosition(x, z){
       source.setPosition(x,0,z);
+      position = [x,z];
+    },
+
+     getPosition(){
+      return position;
     },
 
     setActive(active){
@@ -283,6 +296,11 @@ function makeLoopVoice(buffer, position = [0,0]) {
   return {
     setPosition(x, z){
       source.setPosition(x,0,z);
+      position = [x,z];
+    },
+
+    getPosition(){
+      return position;
     },
 
     setActive(active){
