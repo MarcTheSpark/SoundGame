@@ -1,9 +1,9 @@
-// Step 1: bootstrap AudioContext + Resonance Audio, play one spatialized test tone.
+// Audio-only navigation game: input, game loop, and voice factories.
 let ctx, scene, voices = [], statusBox;
 let keys = {};
 let enemyAudioBuffers = [];
 
-//start facing forward
+// heading is in radians from +x; π/2 faces +y (forward)
 let player = { x: 0, y: -2, heading: Math.PI / 2};
 const speed = 3; // meters per second
 const turnspeed = 2;
@@ -21,8 +21,6 @@ window.addEventListener('keyup', (e) => {
   keys[e.key] = false;
 });
 
-
-// ...and the matching one for 'keyup'
 
 let lastTime;  // timestamp of the previous frame, in seconds; undefined until the first frame runs
 
@@ -66,11 +64,11 @@ function tick(now) {
   
   setStatus(`player position ${JSON.stringify(player)}`);
 
-  // Note that Resonance uses y as up and x/z as floor position
-  scene.setListenerPosition(player.x, 0, player.y);
-  scene.setListenerOrientation(Math.cos(player.heading), 0, Math.sin(player.heading),  0, 1, 0);
+  // Resonance uses y as up and x/z as the floor, with -z as forward, so our game y becomes -z.
+  scene.setListenerPosition(player.x, 0, -player.y);
+  scene.setListenerOrientation(Math.cos(player.heading), 0, -Math.sin(player.heading),  0, 1, 0);
 
-  // moves in a circle on the x-z plain (the two ground axes)
+  // test: orbit two voices around the origin
   // voices[0].setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
   // voices[1].setPosition(-Math.cos(Math.PI * t / 2) * 2,-Math.sin(Math.PI * t / 2) * 2);
   // setStatus(dt);
@@ -84,7 +82,7 @@ async function start() {
   statusBox = document.getElementById('status');
 
   if (ctx == null) {
-    // if context box is empty set it up + the scene
+    // first Start click: create the AudioContext and scene
     setup();
   }
   await loadEnemyBuffers();
@@ -157,34 +155,30 @@ function setup() {
 
   scene.setRoomProperties(roomDimensions, roomMaterials);
 
-  //tale the output of the scene and connect to speakers
+  // take the output of the scene and connect to speakers
   scene.output.connect(ctx.destination);
 }
 
 function makeSawVoice(frequency,position = [0,0]){
   let volume = 0.1;
-  // Place a source 2 meters to the player's right. 
-  // Resonance axes: +x right, +y up, +z depth (front/back).
+  // Resonance axes: +x right, +y up, -z forward (front/back).
   const source = scene.createSource();
-  source.setPosition(position[0],0,position[1]);
+  source.setPosition(position[0], 0, -position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
-  // start by asking the context to make a sine oscillator
+  // two sawtooth oscillators a fifth apart
   const osc = ctx.createOscillator();
 
   osc.type = 'sawtooth';
-  
-  // set the value of the oscillator's frequency t o 440 (A)
   osc.frequency.value = frequency;
 
   const osc2 = ctx.createOscillator();
   osc2.type = 'sawtooth';
   osc2.frequency.value = frequency * 3 / 2;
 
-  // create a gain to make it not full volume
+  // half volume; the LFO below pulses this gain
   const gain = ctx.createGain();
-  // set it to 15%
   gain.gain.value = 0.5;
 
   const lfo = ctx.createOscillator();
@@ -201,9 +195,9 @@ function makeSawVoice(frequency,position = [0,0]){
   osc2.start();
 
   return{
-    setPosition(x, z){
-      source.setPosition(x,0,z);
-      position = [x,z];
+    setPosition(x, y){
+      source.setPosition(x, 0, -y);
+      position = [x, y];
     },
 
     getPosition(){
@@ -231,7 +225,7 @@ function makeSawVoice(frequency,position = [0,0]){
 function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volume , position = [0,0]){
 
   const source = scene.createSource();
-  source.setPosition(position[0],0,position[1]);
+  source.setPosition(position[0], 0, -position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
@@ -254,9 +248,9 @@ function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volum
   modulator.start();
 
  return{
-    setPosition(x, z){
-      source.setPosition(x,0,z);
-      position = [x,z];
+    setPosition(x, y){
+      source.setPosition(x, 0, -y);
+      position = [x, y];
     },
 
      getPosition(){
@@ -283,7 +277,7 @@ function makeLoopVoice(buffer, position = [0,0]) {
   let volume = 0.5;
 
   const source = scene.createSource();
-  source.setPosition(position[0],0,position[1]);
+  source.setPosition(position[0], 0, -position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
@@ -294,9 +288,9 @@ function makeLoopVoice(buffer, position = [0,0]) {
   loopnode.start();
 
   return {
-    setPosition(x, z){
-      source.setPosition(x,0,z);
-      position = [x,z];
+    setPosition(x, y){
+      source.setPosition(x, 0, -y);
+      position = [x, y];
     },
 
     getPosition(){

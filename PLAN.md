@@ -14,8 +14,10 @@ Runtime layers, top to bottom:
    (0–1), and `status` (`playing`, `won`, `dead`). Coordinates are in
    meters in a single 2D floor plane (x left/right, y forward/back).
    Resonance uses a different convention — its floor is the x–z plane
-   and +y is up — so game `(x, y)` maps to Resonance `(x, 0, y)`, and
-   the Resonance height axis is always 0.
+   and +y is up — so game `(x, y)` maps to Resonance `(x, 0, -y)`, and
+   the Resonance height axis is always 0. The minus sign matters:
+   Resonance is right-handed, so its forward is −z, and `(x, 0, y)`
+   would mirror left and right (see step 6.3).
 3. **Game loop** — `requestAnimationFrame`, dt from the timestamp. Each
    frame: read held keys, update player heading and position, integrate
    enemy positions, check collisions, update listener position and
@@ -207,7 +209,7 @@ can confirm before moving on.
       and reuse the buffer) and place three stationary enemies at
       different positions. Confirm you can tell them apart and localize
       each.
-   3. **Debug minimap** *(next)*. `minimap.js` is a ready-made widget
+   3. **Debug minimap** *(done)*. `minimap.js` is a ready-made widget
       that draws a top-down view on a `<canvas>`: the player as a blue
       dot with a heading arrow, enemies in red, and home in gold. The
       game is played by ear, but seeing the positions lets you check
@@ -221,23 +223,34 @@ can confirm before moving on.
         widget finds the canvas by its `id`.
       - **`getPosition()` on every voice.** Resonance sources can be
         given a position, but they can't report it back, so each voice
-        has to remember its own. Inside each factory, keep a `pos`
-        variable (start it at `position`), update it in `setPosition`,
-        and add a `getPosition()` that returns it as `[x, z]`. This
-        extends the shared interface from step 5.3, and the returned
-        object closes over `pos` exactly as it closes over its audio
-        nodes. Step 6.4 needs `getPosition()` too, to measure distances.
+        has to remember its own. Each factory reuses its `position`
+        parameter for this: `setPosition` updates it, and `getPosition()`
+        returns it as `[x, y]`. A parameter is just a local variable, so
+        the returned object closes over it exactly as it closes over its
+        audio nodes. This extends the shared interface from step 5.3. Step 6.4 needs `getPosition()` too, to measure distances.
       - **Draw each frame.** In `tick()`, call
         `drawMinimap(player, voices, homeIndex)`. Here `homeIndex` is the
         index of the home voice in `voices`, which is currently `4`.
-      Verify by walking and turning. The blue arrow should point
-      toward whatever you hear in front of you, and as you get closer
-      to a red dot, that enemy should get louder. The map is a true top-down view
-      with +z pointing up, which puts +x on the *left*. If pressing Left
-      turns the arrow clockwise, the turn direction has the wrong sign.
-      Check it by ear: put a sound on your right and press Left. The
-      sound should swing toward the front.
-   4. **Proximity → playback rate.** Each frame, the loop computes the
+      - **Fix the mirror: hand Resonance `(x, 0, -y)`.** The map draws
+        +x to the right and +y up, like a normal graph. Resonance is
+        right-handed with y up, so when you face +z, +x is on your
+        *left*. That makes the current `(x, 0, y)` mapping a mirror
+        image, and it's why pressing Left turned you right. Negate the
+        third coordinate everywhere game code talks to Resonance, eight
+        places in all: `setListenerPosition(x, 0, -y)`,
+        `setListenerOrientation(cos h, 0, -sin h, 0, 1, 0)` (a direction
+        flips just like a position), each factory's initial
+        `source.setPosition`, and each voice's `setPosition(x, y)`
+        method. `front-back.js` and `air-absorption.js` need no change:
+        they only ever see Resonance coordinates. The map is what made
+        this bug visible: before the fix, a dot drawn on your right was
+        heard on your left.
+      Verify by walking and turning. At the start, Resonance's forward
+      is `(0, 0, -1)`, its default. A red dot on the right of the map is
+      heard on the right. With a sound on your right, pressing Left
+      swings it toward the back. As you get closer to a red dot, that
+      enemy should get louder.
+   4. **Proximity → playback rate** *(next)*. Each frame, the loop computes the
       player-to-enemy distance and maps it to a `playbackRate` from 1×
       (at or beyond some radius) to 2× (touching). This adds one method
       to the loop voice, e.g. `setProximity(p)` with `p` from 0 to 1.
