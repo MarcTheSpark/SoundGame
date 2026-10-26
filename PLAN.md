@@ -29,8 +29,8 @@ Runtime layers, top to bottom:
    sounding object is a small synth subgraph whose final node connects
    into a `scene.createSource()`. Most sources are static — their
    position is set once with `source.setPosition(x, y, z)` — but a
-   source *can* move (enemies will, and the two test voices, saw and
-   FM, already orbit the origin); a moving source just calls
+   source *can* move (enemies will; an orbit test for two voices sits
+   commented out in `tick()`); a moving source just calls
    `setPosition` each frame. Voices are built by a `makeVoice`-style factory and kept in
    an array, each exposing the same small interface (`setPosition`,
    `getPosition`, `setActive`, `stop`) so the loop can treat them uniformly — closures,
@@ -65,7 +65,8 @@ later, try partially reflective walls during the polish pass (step 11).
 Each frame (remember game `(x, y)` → Resonance `(x, 0, y)`; +y is up):
 - `scene.setListenerPosition(player.x, 0, player.y)`
 - update listener orientation from `player.heading` (forward vector
-  `(cos(heading), 0, sin(heading))`, up vector `(0, 1, 0)`)
+  `(cos(heading), 0, sin(heading))`, up vector `(0, -1, 0)`; up is
+  negated to work around a Resonance handedness bug, see step 6.3)
 
 Tank controls: left/right rotate `heading`, up/down translate along
 `(cos(heading), sin(heading))` in the floor plane. Rotation matters for an audio-only
@@ -97,15 +98,15 @@ ability to do it deliberately.
 We tackle these one at a time. Each step ends with something audible we
 can confirm before moving on.
 
-1. **HTML skeleton + AudioContext bootstrap.** `index.html` with a
+1. **HTML skeleton + AudioContext bootstrap** *(done)*. `index.html` with a
    Start button and instructions. Clicking Start creates the
    `AudioContext`, instantiates Resonance Audio, plays a single test
    tone through a Resonance source positioned to the player's right,
    and confirms binaural output works.
-2. **Room model + listener.** Configure room dimensions and materials.
+2. **Room model + listener** *(done)*. Configure room dimensions and materials.
    Add a second test source on the left so the student hears the room
    reflections and the stereo image.
-3. **Player movement — translation only.** Arrow-key input and the
+3. **Player movement — translation only** *(done)*. Arrow-key input and the
    game loop. Player state is just `{x, y}` for now; movement maps to
    *world* axes so the coordinates stay obvious (left/right along ∓x,
    up/down along ±y). Broken into small, individually-confirmable
@@ -145,13 +146,14 @@ can confirm before moving on.
 4. **Tank controls — rotation and facing-relative movement.** Add
    `heading` to player state; left/right rotate `heading` instead of
    strafing, and each frame update the listener orientation from
-   `heading` (forward `(cos(heading), 0, sin(heading))`, up `(0, 1, 0)`
-   — the x–z floor, +y up). Two substeps:
+   `heading` (forward `(cos(heading), 0, sin(heading))` in the x–z
+   floor; up was later changed to `(0, -1, 0)`, see step 6.3). Two
+   substeps:
 
    1. **Rotation + listener orientation** *(done)*. Left/right turn the
       heading and the listener sweeps. Verify by rotating in place — the
       saw chord crosses the stereo field without the player moving.
-   2. **Facing-relative movement** *(do this next, before step 5)*.
+   2. **Facing-relative movement** *(done)*.
       Up/down currently change `player.y` alone, so movement is locked
       to the world y axis and ignores `heading`; it only *looks* like
       tank controls because the start heading `π/2` happens to point
@@ -166,18 +168,18 @@ can confirm before moving on.
    the goal is to go from one hard-coded source to a small, uniform
    collection we can grow. Broken into substeps:
 
-   1. **Factory instead of globals.** Generalize `createSource` into
+   1. **Factory instead of globals** *(done)*. Generalize `createSource` into
       `makeVoice(config)` that builds one synth subgraph plus its
       Resonance source and *returns a plain object*, rather than
       assigning module-level `source`/`osc`/… globals. Keep the voices
       in a `voices` array. Rebuild the current saw chord through the
       factory and confirm nothing changed audibly.
-   2. **A second voice.** Create a second, identical voice at a
+   2. **A second voice** *(done)*. Create a second, identical voice at a
       different position. Iterate `voices` each frame for anything
       per-source. Confirm you can localize both at once — one to the
       left, one to the right.
-   3. **Agree the shared shape.** Give every voice the same tiny
-      interface — `setPosition(x, z)`, `setActive(on)`, `stop()` — and
+   3. **Agree the shared shape** *(done)*. Give every voice the same tiny
+      interface — `setPosition(x, y)`, `setActive(on)`, `stop()` — and
       wire a key (or a button per voice) to toggle `setActive`. Needing
       on/off is what forces the interface to exist; once it does, the
       loop can treat every voice identically. Use factory functions with
@@ -228,7 +230,7 @@ can confirm before moving on.
         parameter for this: `setPosition` updates it, and `getPosition()`
         returns it as `[x, y]`. A parameter is just a local variable, so
         the returned object closes over it exactly as it closes over its
-        audio nodes. This extends the shared interface from step 5.3. Step 6.4 needs `getPosition()` too, to measure distances.
+        audio nodes. This extends the shared interface from step 5.3. Step 6.5 needs `getPosition()` too, to measure distances.
       - **Draw each frame.** In `tick()`, call
         `drawMinimap(player, voices, homeIndex)`. Here `homeIndex` is the
         index of the home voice in `voices`, which is currently `4`.
@@ -255,7 +257,36 @@ can confirm before moving on.
       at the start *and* after turning 90°. With a sound on your right,
       pressing Left swings it toward the back. As you get closer to a
       red dot, that enemy should get louder.
-   4. **Proximity → playback rate** *(next)*. Each frame, the loop computes the
+   4. **Tune the front/back cue** *(next)*. A listening experiment,
+      not new code: find a `cut` value for `front-back.js` that makes
+      "in front" and "behind" easy to tell apart without making sounds
+      behind you feel muffled. Read the front/back aside at the end of
+      this plan first, so you can explain what `cut` actually changes:
+      how many dB of treble the shelf takes off a sound directly
+      behind you.
+      - **Set it.** In `setup()`, change `installFrontBack(scene, ctx)`
+        to `installFrontBack(scene, ctx, { cut: 8 })`. 8 is the default,
+        so nothing changes yet. Reload the page after each change,
+        because `setup()` only runs on the first Start.
+      - **The test.** Use the minimap to stand about 3 m from one
+        enemy, facing it. Listen, then turn 180° so it's directly
+        behind you, and listen again. Then do it blind: close your eyes
+        while a partner (or you, with the keys) turns you a random
+        amount, and say "front" or "back" before opening them.
+      - **Sweep.** Try `cut` at 0 (cue off), 8, 14, 20 and 26, and keep
+        notes on each: how sure you were, and whether sounds behind you
+        started to sound muffled rather than *behind*. Choose the
+        smallest value that you get right reliably. If nothing is
+        clear, try lowering `corner` from 3500 to around 2500, but not
+        below about 2000.
+      - **Why this is a design decision.** The cue is fake. Real ears do
+        this with the shape of the outer ear, and Resonance's generic
+        HRTF does it weakly. A bigger cut is easier to hear but sounds
+        less natural, and it stacks with the darkening that
+        `air-absorption.js` already does for distant sounds, so check
+        far enemies too. Write down the value you chose and why: it's a
+        good thing to be able to explain in an interview.
+   5. **Proximity → playback rate**. Each frame, the loop computes the
       player-to-enemy distance and maps it to a `playbackRate` from 1×
       (at or beyond some radius) to 2× (touching). This adds one method
       to the loop voice, e.g. `setProximity(p)` with `p` from 0 to 1.
@@ -266,14 +297,16 @@ can confirm before moving on.
       and rise in pitch smoothly.
 7. **Home (exit) voice.** Build the FM home sound from
    `Sounds/home_sound.txt` with `makeFmVoice`: carrier 94 Hz, modulator
-   141 Hz (94 × 1.51). Place it at a fixed position as the goal.
+   141 Hz (94 × 1.51). Place it at a fixed position as the goal. For
+   now home is a placeholder loop (`Sounds/home.mp3`, `voices[4]`,
+   drawn gold on the minimap); this voice replaces it.
    Proximity drives the mod depth from 30 (far) to 490 (close), so home
    gets brighter as you near it. This is the same pattern as the enemy
    playback rate: a `setProximity(p)` method, with `p` computed in the
    game loop and the change ramped with `setTargetAtTime` on the
    mod-depth gain. Once there's a real source to navigate toward,
    retire the test saw and FM voices.
-8. **Enemy movement.** Give the three enemies simple velocities (bouncing
+8. **Enemy movement.** Give the enemies simple velocities (bouncing
    off the room bounds). Confirm the soundscape stays readable and the
    player can still localize home through the enemies.
 9. **Collision: win + lose.** Touching an enemy = instant death (stop
