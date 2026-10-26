@@ -15,9 +15,8 @@
 //      leave it out and everything is drawn as an enemy.
 //
 // Orientation: +x is right and +y (game forward) is up the screen, like a
-// normal graph. This is only a true, unmirrored top-down view if game.js
-// hands Resonance (x, 0, -y): Resonance is right-handed with y up, so its
-// "forward" is -z.
+// normal graph. That matches what you hear because game.js hands Resonance
+// (x, 0, y), and Resonance places sources with +z as forward.
 //
 // The view starts at ±5 m and grows (never shrinks) to fit everything, so
 // the scale doesn't jitter as you move. Grid lines are 1 m apart.

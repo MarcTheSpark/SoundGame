@@ -64,9 +64,12 @@ function tick(now) {
   
   setStatus(`player position ${JSON.stringify(player)}`);
 
-  // Resonance uses y as up and x/z as the floor, with -z as forward, so our game y becomes -z.
-  scene.setListenerPosition(player.x, 0, -player.y);
-  scene.setListenerOrientation(Math.cos(player.heading), 0, -Math.sin(player.heading),  0, 1, 0);
+  // Teacher Note: Resonance uses a left-handed coordinate system for placing sources, following
+  // game-engine convention: +x right, +y up, +z forward, so our game (x, y) is its (x, 0, y).
+  // But following web audio, setListenerOrientation uses a right-handed coordinate system where right = forward × up,
+  // which comes out backwards for those axes, so we pass up as (0, -1, 0) to make it point the right way.
+  scene.setListenerPosition(player.x, 0, player.y);
+  scene.setListenerOrientation(Math.cos(player.heading), 0, Math.sin(player.heading),  0, -1, 0);
 
   // test: orbit two voices around the origin
   // voices[0].setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
@@ -161,9 +164,9 @@ function setup() {
 
 function makeSawVoice(frequency,position = [0,0]){
   let volume = 0.1;
-  // Resonance axes: +x right, +y up, -z forward (front/back).
+  // Resonance axes: +x right, +y up, +z forward.
   const source = scene.createSource();
-  source.setPosition(position[0], 0, -position[1]);
+  source.setPosition(position[0], 0, position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
@@ -196,7 +199,7 @@ function makeSawVoice(frequency,position = [0,0]){
 
   return{
     setPosition(x, y){
-      source.setPosition(x, 0, -y);
+      source.setPosition(x, 0, y);
       position = [x, y];
     },
 
@@ -225,7 +228,7 @@ function makeSawVoice(frequency,position = [0,0]){
 function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volume , position = [0,0]){
 
   const source = scene.createSource();
-  source.setPosition(position[0], 0, -position[1]);
+  source.setPosition(position[0], 0, position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
@@ -249,7 +252,7 @@ function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volum
 
  return{
     setPosition(x, y){
-      source.setPosition(x, 0, -y);
+      source.setPosition(x, 0, y);
       position = [x, y];
     },
 
@@ -277,7 +280,7 @@ function makeLoopVoice(buffer, position = [0,0]) {
   let volume = 0.5;
 
   const source = scene.createSource();
-  source.setPosition(position[0], 0, -position[1]);
+  source.setPosition(position[0], 0, position[1]);
   source.setMaxDistance(25);
   source.setGain(volume);
 
@@ -289,7 +292,7 @@ function makeLoopVoice(buffer, position = [0,0]) {
 
   return {
     setPosition(x, y){
-      source.setPosition(x, 0, -y);
+      source.setPosition(x, 0, y);
       position = [x, y];
     },
 

@@ -14,10 +14,11 @@ Runtime layers, top to bottom:
    (0–1), and `status` (`playing`, `won`, `dead`). Coordinates are in
    meters in a single 2D floor plane (x left/right, y forward/back).
    Resonance uses a different convention — its floor is the x–z plane
-   and +y is up — so game `(x, y)` maps to Resonance `(x, 0, -y)`, and
-   the Resonance height axis is always 0. The minus sign matters:
-   Resonance is right-handed, so its forward is −z, and `(x, 0, y)`
-   would mirror left and right (see step 6.3).
+   and +y is up — so game `(x, y)` maps to Resonance `(x, 0, y)`, and
+   the Resonance height axis is always 0. Resonance places sources with
+   +z as forward, but `setListenerOrientation` computes "right" as
+   forward × up, which comes out backwards for those axes, so the game
+   passes up as `(0, -1, 0)` (see step 6.3).
 3. **Game loop** — `requestAnimationFrame`, dt from the timestamp. Each
    frame: read held keys, update player heading and position, integrate
    enemy positions, check collisions, update listener position and
@@ -231,25 +232,29 @@ can confirm before moving on.
       - **Draw each frame.** In `tick()`, call
         `drawMinimap(player, voices, homeIndex)`. Here `homeIndex` is the
         index of the home voice in `voices`, which is currently `4`.
-      - **Fix the mirror: hand Resonance `(x, 0, -y)`.** The map draws
-        +x to the right and +y up, like a normal graph. Resonance is
-        right-handed with y up, so when you face +z, +x is on your
-        *left*. That makes the current `(x, 0, y)` mapping a mirror
-        image, and it's why pressing Left turned you right. Negate the
-        third coordinate everywhere game code talks to Resonance, eight
-        places in all: `setListenerPosition(x, 0, -y)`,
-        `setListenerOrientation(cos h, 0, -sin h, 0, 1, 0)` (a direction
-        flips just like a position), each factory's initial
-        `source.setPosition`, and each voice's `setPosition(x, y)`
-        method. `front-back.js` and `air-absorption.js` need no change:
-        they only ever see Resonance coordinates. The map is what made
-        this bug visible: before the fix, a dot drawn on your right was
-        heard on your left.
-      Verify by walking and turning. At the start, Resonance's forward
-      is `(0, 0, -1)`, its default. A red dot on the right of the map is
-      heard on the right. With a sound on your right, pressing Left
-      swings it toward the back. As you get closer to a red dot, that
-      enemy should get louder.
+      - **Fix turning: pass up as `(0, -1, 0)`.** The map showed that
+        what we heard didn't match where things were once we turned.
+        Resonance contradicts itself. It places sources with +x right,
+        +y up and +z forward, so game `(x, y)` is Resonance `(x, 0, y)`.
+        But `setListenerOrientation` computes "right" as forward × up,
+        which points *left* in those axes, so the soundfield turned the
+        wrong way. It was correct only at the starting heading and about
+        180° off after a quarter turn. A first attempt, mapping to
+        `(x, 0, -y)`, was checked only at the start heading and broke
+        the same way. The fix is one line:
+        `setListenerOrientation(cos h, 0, sin h, 0, -1, 0)`. Negating up
+        makes the cross product point the true right. Side effect:
+        above and below are swapped, which is inaudible while every
+        source sits at height 0 and the floor and ceiling share a
+        material. Forward is still the true forward, so `front-back.js`
+        needs no change. This was confirmed by rendering the real
+        library offline. (Resonance's own Three.js demo has a related
+        bug: what's in front is rendered behind you.)
+      Verify by walking and turning, and check at more than one
+      heading. A red dot on the right of the map is heard on the right
+      at the start *and* after turning 90°. With a sound on your right,
+      pressing Left swings it toward the back. As you get closer to a
+      red dot, that enemy should get louder.
    4. **Proximity → playback rate** *(next)*. Each frame, the loop computes the
       player-to-enemy distance and maps it to a `playbackRate` from 1×
       (at or beyond some radius) to 2× (touching). This adds one method
