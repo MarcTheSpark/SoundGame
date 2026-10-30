@@ -1,7 +1,7 @@
 // Audio-only navigation game: input, game loop, and voice factories.
 let ctx, scene, voices = [], statusBox;
 let keys = {};
-let enemyAudioBuffers = [];
+let audioBuffers = [];
 
 // heading is in radians from +x; π/2 faces +y (forward)
 let player = { x: 0, y: -2, heading: Math.PI / 2};
@@ -88,31 +88,31 @@ async function start() {
     // first Start click: create the AudioContext and scene
     setup();
   }
-  await loadEnemyBuffers();
+  await loadAudioBuffers();
 
 
   voices.forEach((voice) => voice.stop());
 
   voices = [
-    // makeLoopVoice(enemyAudioBuffers[0], [-3.34, -3.74]), 
-    // makeLoopVoice(enemyAudioBuffers[1], [5.26, -0.78]), 
-    // makeLoopVoice(enemyAudioBuffers[2], [-3.8, 3.67]),
-    // makeLoopVoice(enemyAudioBuffers[0], [2.84, 4]),
-    makeLoopVoice(enemyAudioBuffers[3], [5.5, 7.5])
+    makeLoopVoice(audioBuffers[0], [-3.34, -3.74]), 
+    makeLoopVoice(audioBuffers[1], [5.26, -0.78]), 
+    makeLoopVoice(audioBuffers[2], [-3.8, 3.67]),
+    makeLoopVoice(audioBuffers[3], [2.84, 4]),
+    makeLoopVoice(audioBuffers[4], [5.5, 7.5])
   ];
 
   requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
 }
 
-async function loadEnemyBuffers(){
-  const soundPaths = ["Sounds/ScaryLoop1.wav", "Sounds/ScaryLoop2.wav", "Sounds/ScaryLoop3.wav", "Sounds/home.mp3"];
+async function loadAudioBuffers(){
+  const soundPaths = ["Sounds/ScaryLoop1.wav", "Sounds/ScaryLoop2.wav", "Sounds/ScaryLoop3.wav", "Sounds/ScaryLoop4.wav", "Sounds/home.mp3"];
 
  for (const soundPath of soundPaths) {
   const response = await fetch(soundPath);//server response:unopen package
   const arrayBuffer = await response.arrayBuffer();//open the package get the raw Binary 
   const buffer = await ctx.decodeAudioData(arrayBuffer);//translate binary to web audio language, (parse metadata)
-  enemyAudioBuffers.push(buffer);//put playable sound data in enemyAudioBuffers
+  audioBuffers.push(buffer);//put playable sound data in audioBuffers
  }
 
 }
