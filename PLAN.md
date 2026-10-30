@@ -230,7 +230,7 @@ can confirm before moving on.
         parameter for this: `setPosition` updates it, and `getPosition()`
         returns it as `[x, y]`. A parameter is just a local variable, so
         the returned object closes over it exactly as it closes over its
-        audio nodes. This extends the shared interface from step 5.3. Step 6.5 needs `getPosition()` too, to measure distances.
+        audio nodes. This extends the shared interface from step 5.3. Step 6.6 needs `getPosition()` too, to measure distances.
       - **Draw each frame.** In `tick()`, call
         `drawMinimap(player, voices, homeIndex)`. Here `homeIndex` is the
         index of the home voice in `voices`, which is currently `4`.
@@ -257,7 +257,7 @@ can confirm before moving on.
       at the start *and* after turning 90°. With a sound on your right,
       pressing Left swings it toward the back. As you get closer to a
       red dot, that enemy should get louder.
-   4. **Tune the front/back cue** *(next)*. A listening experiment,
+   4. **Tune the front/back cue** *(done: `cut: 15, corner: 3000`)*. A listening experiment,
       not new code: find a `cut` value for `front-back.js` that makes
       "in front" and "behind" easy to tell apart without making sounds
       behind you feel muffled. Read the front/back aside at the end of
@@ -286,7 +286,22 @@ can confirm before moving on.
         `air-absorption.js` already does for distant sounds, so check
         far enemies too. Write down the value you chose and why: it's a
         good thing to be able to explain in an interview.
-   5. **Proximity → playback rate**. Each frame, the loop computes the
+   5. **Review checkpoint: code walkthrough** *(next)*. No new
+      features. `game.js` has grown over many lessons, so before adding
+      more we stop and make sure every line is clear.
+      `walkthrough/` rebuilds `game.js` in twelve runnable stages, in
+      roughly the order we wrote it. Each stage adds one idea, and stage
+      12 is the current `game.js`. Run each one at
+      `http://localhost:8000/walkthrough/?step=N`, diff it against the
+      previous stage, and answer that stage's questions in
+      `walkthrough/README.md`. For each stage, the guide (Marc or
+      Claude) shows every new block of lines on its own and explains it,
+      one block at a time, in order. Susie then explains each block back
+      before the next one is shown. Move on only when
+      every new line in the stage can be explained without notes. Done
+      when the whole of `game.js` can be explained top to bottom,
+      interview-style.
+   6. **Proximity → playback rate**. Each frame, the loop computes the
       player-to-enemy distance and maps it to a `playbackRate` from 1×
       (at or beyond some radius) to 2× (touching). This adds one method
       to the loop voice, e.g. `setProximity(p)` with `p` from 0 to 1.

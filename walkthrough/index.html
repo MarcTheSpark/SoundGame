@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Resolve every relative URL from the project root, so stages find Sounds/ and the helper scripts. -->
+  <base href="../">
+  <title>Audio Game — Walkthrough</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; }
+    button { font-size: 1.1rem; padding: 0.6rem 1.2rem; }
+    #status { margin-top: 1rem; color: #555; }
+    nav a { margin-right: 0.4rem; }
+    nav a.current { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Audio Game — Walkthrough</h1>
+  <nav id="stages"></nav>
+  <p>Now running: <code id="stage-file"></code></p>
+  <p><strong>Put on headphones.</strong></p>
+  <button id="start">Start</button>
+  <button id="end">End</button>
+  <p id="status"></p>
+
+  <canvas id="minimap" width="320" height="320"></canvas>
+  <script src="minimap.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/resonance-audio/build/resonance-audio.min.js"></script>
+  <script src="air-absorption.js"></script>
+  <script src="front-back.js"></script>
+  <script>
+    // Pick a stage with ?step=N and load that file in place of game.js.
+    const stages = [
+      '01-test-tone.js', '02-synth-voice.js', '03-start-stop.js', '04-room.js',
+      '05-game-loop.js', '06-moving-listener.js', '07-tank-controls.js', '08-voice-factory.js',
+      '09-voice-interface.js', '10-spatial-helpers.js', '11-sample-loops.js', '12-minimap.js',
+    ];
+    const step = Number(new URLSearchParams(location.search).get('step')) || 1;
+
+    stages.forEach((file, i) => {
+      const link = document.createElement('a');
+      link.href = `walkthrough/?step=${i + 1}`;
+      link.textContent = i + 1;
+      if (i + 1 === step) link.className = 'current';
+      document.getElementById('stages').append(link);
+    });
+
+    document.getElementById('stage-file').textContent = `walkthrough/${stages[step - 1]}`;
+    const script = document.createElement('script');
+    script.src = `walkthrough/${stages[step - 1]}`;
+    document.body.append(script);
+  </script>
+</body>
+</html>
