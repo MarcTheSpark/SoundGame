@@ -94,10 +94,10 @@ async function start() {
   voices.forEach((voice) => voice.stop());
 
   voices = [
-    makeLoopVoice(enemyAudioBuffers[0], [-3.34, -3.74]), 
-    makeLoopVoice(enemyAudioBuffers[1], [5.26, -0.78]), 
-    makeLoopVoice(enemyAudioBuffers[2], [-3.8, 3.67]),
-    makeLoopVoice(enemyAudioBuffers[0], [2.84, 4]),
+    // makeLoopVoice(enemyAudioBuffers[0], [-3.34, -3.74]), 
+    // makeLoopVoice(enemyAudioBuffers[1], [5.26, -0.78]), 
+    // makeLoopVoice(enemyAudioBuffers[2], [-3.8, 3.67]),
+    // makeLoopVoice(enemyAudioBuffers[0], [2.84, 4]),
     makeLoopVoice(enemyAudioBuffers[3], [5.5, 7.5])
   ];
 
@@ -132,7 +132,7 @@ function setup() {
   scene = new ResonanceAudio(ctx);
 
   installAirAbsorption(scene, ctx, { cut: 30, fadeStart: 0.3, reverbFar: 0, reverbCurve: 0.3 });
-  installFrontBack(scene, ctx);
+  installFrontBack(scene, ctx, {cut: 15, corner:3000});
   
   // Define materials for each of the room’s six surfaces.
   // Room materials have different acoustic reflectivity.
