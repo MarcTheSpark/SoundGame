@@ -42,7 +42,7 @@ Runtime layers, top to bottom:
 ```
 [enemy loop voice] ──► ResonanceAudio.Source ──┐    (moving source)
 [enemy loop voice] ──► ResonanceAudio.Source ──┤    (moving source)
-[home FM voice]    ──► ResonanceAudio.Source ──┼──► ResonanceAudio scene ──► ctx.destination
+[home pad voice]   ──► ResonanceAudio.Source ──┼──► ResonanceAudio scene ──► ctx.destination
 [heartbeat voice]  ──► ResonanceAudio.Source ──┘    (room model + binaural renderer)
 ```
 
@@ -82,12 +82,10 @@ ability to do it deliberately.
   `playbackRate` from 1× up to 2×, so an approaching enemy speeds up
   (and, since `playbackRate` doesn't time-stretch, rises in pitch up to
   an octave), which adds urgency.
-- **Exit door ("home")**: FM, following `Sounds/home_sound.txt`. A sine
-  carrier at 94 Hz is modulated by a sine at 141 Hz (94 × 1.51), and
-  the mod depth rises from 30 (far) to 490 (close), so home gets
-  brighter and richer as you approach. The 1.51 ratio is just off a
-  perfect fifth, so it sits between consonant and strange. This needs
-  `makeFmVoice` from step 5.4, set to these numbers.
+- **Exit door ("home")**: the looped `Sounds/home.mp3`. As you approach,
+  a pad (`Sounds/home_averaged.wav`) fades in at three octaves, low then
+  middle then high, until it overwhelms the loop. Home blooms, where
+  enemies speed up. See step 7.
 - **Heartbeat** — short low-frequency thump (sine ~50 Hz with a fast
   amp envelope), scheduled on an interval that shortens as health
   drops. Below some health threshold, add a second irregular thump and
@@ -310,17 +308,45 @@ can confirm before moving on.
       than setting `.value` directly, so the rate glides instead of
       stepping. Verify by approaching an enemy: it should speed up
       and rise in pitch smoothly.
-7. **Home (exit) voice.** Build the FM home sound from
-   `Sounds/home_sound.txt` with `makeFmVoice`: carrier 94 Hz, modulator
-   141 Hz (94 × 1.51). Place it at a fixed position as the goal. For
-   now home is a placeholder loop (`Sounds/home.mp3`, `voices[4]`,
-   drawn gold on the minimap); this voice replaces it.
-   Proximity drives the mod depth from 30 (far) to 490 (close), so home
-   gets brighter as you near it. This is the same pattern as the enemy
-   playback rate: a `setProximity(p)` method, with `p` computed in the
-   game loop and the change ramped with `setTargetAtTime` on the
-   mod-depth gain. Once there's a real source to navigate toward,
-   retire the test saw and FM voices.
+7. **Home (exit) voice.** Home is currently one loop (`Sounds/home.mp3`,
+   `voices[4]`). As the player approaches, a pad (`Sounds/home_averaged.wav`)
+   blooms in three octave layers, low first, then middle, then high, and
+   it ends up drowning out the regular loop. Everything stays in **one**
+   Resonance source at the home position, so home remains a single object
+   in space. Inside it are four `AudioBufferSourceNode`s, each going
+   through its own `GainNode` into `source.input`:
+
+   | Layer | Buffer | `playbackRate` | Gain over `p` |
+   |---|---|---|---|
+   | regular | `home.mp3` | 1 | 1 → 0 across 0.3–1.0 |
+   | pad low | `home_averaged.wav` | 0.5 | 0 → 1 across 0.0–0.5 |
+   | pad mid | `home_averaged.wav` | 1 | 0 → 1 across 0.25–0.75 |
+   | pad high | `home_averaged.wav` | 2 | 0 → 1 across 0.5–1.0 |
+
+   `playbackRate` 0.5 and 2 give exact octaves (as with the enemies, the
+   rate changes pitch and duration together).
+   1. **Declare `p`.** In `setVoiceProximities`, `p` is assigned but
+      never declared, so it silently becomes a global. Add `let p;`.
+   2. **Per-voice proximity range.** Enemies only matter up close
+      (`FAR_PROXIMITY = 3`), but home should start blooming from about
+      8–10 m away. Let a voice carry its own range, and fall back to the
+      shared constants when it doesn't: `voice.far ?? FAR_PROXIMITY`.
+      Verify by logging `p` while walking toward home.
+   3. **`makeHomeVoice`, two layers.** Start with just the regular loop
+      and the middle pad, crossfading on `p`. The only new idea is a
+      `GainNode` per layer, ramped with `setTargetAtTime` the same way
+      the enemies ramp `playbackRate`.
+   4. **`windowGain(p, start, end)`, all layers.** Turn the near/far
+      mapping from `setVoiceProximities` into a small reusable function
+      that maps `p` into one layer's window, then add the low and high
+      layers. Before testing, predict which layer you'll hear first.
+   5. **Tune by ear.** Adjust the window edges and each layer's level.
+      Three pad copies plus distance attenuation stack up close, so
+      give each layer a gain of about 0.3–0.4 to leave headroom.
+   6. *(Optional, if time allows.)* **Tremolo on the pad.** Add
+      amplitude modulation that deepens as you approach: an LFO through
+      a depth gain into the pad's gain `AudioParam`, as in `makeSawVoice`.
+      Proximity ramps the LFO depth.
 8. **Enemy movement.** Give the enemies simple velocities (bouncing
    off the room bounds). Confirm the soundscape stays readable and the
    player can still localize home through the enemies.
