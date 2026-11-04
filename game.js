@@ -8,6 +8,14 @@ let player = { x: 0, y: -2, heading: Math.PI / 2};
 const speed = 3; // meters per second
 const turnspeed = 2;
 
+//Proximity range for enemies voices
+//equal or smaller than NEAR -> full proximity effect
+//equal or bigger than FAR -> no proximity effect
+//between NEAR and FAR -> partial proximity effect
+const NEAR_PROXIMITY = 0.5;
+const FAR_PROXIMITY = 3;
+
+
 
 document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
@@ -61,6 +69,7 @@ function tick(now) {
     voices[1].setActive(false);
   }
 
+
   
   setStatus(`player position ${JSON.stringify(player)}`);
 
@@ -71,15 +80,36 @@ function tick(now) {
   scene.setListenerPosition(player.x, 0, player.y);
   scene.setListenerOrientation(Math.cos(player.heading), 0, Math.sin(player.heading),  0, -1, 0);
 
-  // test: orbit two voices around the origin
-  // voices[0].setPosition(Math.cos(Math.PI * t) * 2,Math.sin(Math.PI * t) * 2);
-  // voices[1].setPosition(-Math.cos(Math.PI * t / 2) * 2,-Math.sin(Math.PI * t / 2) * 2);
+  setVoiceProximities();
   // setStatus(dt);
 
   drawMinimap(player, voices, 4); // 4 = homeIndex, which voice is the home sound
 
   requestAnimationFrame(tick);
 }
+
+function setVoiceProximities(){
+  //for each voices:
+  //calculate distance from the voice
+  //tell the voice how close to it you are 
+   for (const voice of voices) {
+    const voicePosition  = voice.getPosition();
+    const xDistance = voicePosition[0] - player.x;
+    const yDistance = voicePosition[1] - player.y;
+    const distance = Math.hypot(xDistance,yDistance);
+
+    if(distance >= FAR_PROXIMITY){
+      p = 0;
+    }else if(distance <= NEAR_PROXIMITY){
+      p = 1;
+    }else{//transition region
+      p = (FAR_PROXIMITY - distance) / (FAR_PROXIMITY - NEAR_PROXIMITY); 
+    }
+
+    voice.setProximity(p);
+   }
+}
+
 
 async function start() {
   statusBox = document.getElementById('status');
@@ -176,6 +206,10 @@ function makeSawVoice(frequency,position = [0,0]){
   osc.type = 'sawtooth';
   osc.frequency.value = frequency;
 
+  //osc is the audio node, the synth component itself
+  //osc.frequency is the AudioParameter, a specific knob on that synth component 
+  //osc.frequency.value is the where that knob is set to
+
   const osc2 = ctx.createOscillator();
   osc2.type = 'sawtooth';
   osc2.frequency.value = frequency * 3 / 2;
@@ -213,8 +247,12 @@ function makeSawVoice(frequency,position = [0,0]){
       }else{
         source.setGain(0);
       }
+    },
+
+    setProximity(p){
 
     },
+
     stop(){
       osc.stop();
       osc2.stop();
@@ -266,8 +304,12 @@ function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volum
       }else{
         source.setGain(0);
       }
+    },
+
+    setProximity(p){
 
     },
+
     stop(){
       carrier.stop();
       modulator.stop();
@@ -307,6 +349,11 @@ function makeLoopVoice(buffer, position = [0,0]) {
         source.setGain(0);
       }
     },
+
+    setProximity(p){
+      loopnode.playbackRate.setTargetAtTime(1+p, ctx.currentTime, 0.1);//schedule a smooth transition
+    },
+
     stop(){
       loopnode.stop();
     }
