@@ -26,5 +26,7 @@ desktop.ini
 # REAPER projects (sessions, source media, backups, peaks) — only rendered loops are committed
 Sounds/EnemySound/
 Sounds/Scary sound 1/
+*.reapeaks
 !Sounds/ScaryLoop*.wav
+!Sounds/home_averaged.wav
 !Sounds/home.mp3
