@@ -98,12 +98,16 @@ function setVoiceProximities(){
     const yDistance = voicePosition[1] - player.y;
     const distance = Math.hypot(xDistance,yDistance);
 
-    if(distance >= FAR_PROXIMITY){
+    const far = voice.far ?? FAR_PROXIMITY;
+    const near = voice.near ?? NEAR_PROXIMITY;
+
+    let p;
+    if(distance >= far){
       p = 0;
-    }else if(distance <= NEAR_PROXIMITY){
+    }else if(distance <= near){
       p = 1;
     }else{//transition region
-      p = (FAR_PROXIMITY - distance) / (FAR_PROXIMITY - NEAR_PROXIMITY); 
+      p = (far - distance) / (far - near); 
     }
 
     voice.setProximity(p);
@@ -128,7 +132,7 @@ async function start() {
     makeLoopVoice(audioBuffers[1], [5.26, -0.78]), 
     makeLoopVoice(audioBuffers[2], [-3.8, 3.67]),
     makeLoopVoice(audioBuffers[3], [2.84, 4]),
-    makeLoopVoice(audioBuffers[4], [5.5, 7.5])
+    makeHomeVoice(audioBuffers[4],audioBuffers[5], [5.5, 7.5]),
   ];
 
   requestAnimationFrame(tick);
@@ -136,7 +140,7 @@ async function start() {
 }
 
 async function loadAudioBuffers(){
-  const soundPaths = ["Sounds/ScaryLoop1.wav", "Sounds/ScaryLoop2.wav", "Sounds/ScaryLoop3.wav", "Sounds/ScaryLoop4.wav", "Sounds/home.mp3"];
+  const soundPaths = ["Sounds/ScaryLoop1.wav", "Sounds/ScaryLoop2.wav", "Sounds/ScaryLoop3.wav", "Sounds/ScaryLoop4.wav", "Sounds/home.mp3", "Sounds/home_averaged.wav"];
 
  for (const soundPath of soundPaths) {
   const response = await fetch(soundPath);//server response:unopen package
@@ -318,8 +322,7 @@ function makeFmVoice(carrierFrequency, modulatorFrequency, modulatorIndex, volum
 
 }
 
-function makeLoopVoice(buffer, position = [0,0]) {
-  let volume = 0.5;
+function makeLoopVoice(buffer, position = [0,0], volume = 0.5) {
 
   const source = scene.createSource();
   source.setPosition(position[0], 0, position[1]);
@@ -356,6 +359,82 @@ function makeLoopVoice(buffer, position = [0,0]) {
 
     stop(){
       loopnode.stop();
+    }
+  };
+}
+
+function makeHomeVoice(mainBuffer,padBuffer, position = [0,0], volume = 0.5) {
+
+  const source = scene.createSource();
+  source.setPosition(position[0], 0, position[1]);
+  source.setMaxDistance(25);
+  source.setGain(volume);
+
+  const mainloopnode = ctx.createBufferSource();
+  mainloopnode.buffer = mainBuffer;
+  mainloopnode.loop = true;
+  mainloopnode.connect(source.input);
+  mainloopnode.start();
+
+  const padlownode = ctx.createBufferSource();
+  padlownode.buffer = padBuffer;
+  padlownode.loop = true;
+  padlownode.playbackRate.value = 0.5;
+  const padlowGain = ctx.createGain();
+  padlowGain.gain.value = 0;
+  padlownode.connect(padlowGain);
+  padlowGain.connect(source.input);
+  padlownode.start();
+
+  const padmidnode = ctx.createBufferSource();
+  padmidnode.buffer = padBuffer;
+  padmidnode.loop = true;
+  const padmidGain = ctx.createGain();
+  padmidGain.gain.value = 0;
+  padmidnode.connect(padmidGain);
+  padmidGain.connect(source.input);
+  padmidnode.start();
+
+  const padhighnode = ctx.createBufferSource();
+  padhighnode.buffer = padBuffer;
+  padhighnode.loop = true;
+  padhighnode.playbackRate.value = 2;
+  const padhighGain = ctx.createGain();
+  padhighGain.gain.value = 0;
+  padhighnode.connect(padhighGain);
+  padhighGain.connect(source.input);
+  padhighnode.start();
+
+
+  return {
+    setPosition(x, y){
+      source.setPosition(x, 0, y);
+      position = [x, y];
+    },
+
+    getPosition(){
+      return position;
+    },
+
+    setActive(active){
+      if(active){
+        source.setGain(volume);
+      }else{
+        source.setGain(0);
+      }
+    },
+
+    setProximity(p){
+      padlowGain.gain.setTargetAtTime(p, ctx.currentTime, 0.1);
+      padmidGain.gain.setTargetAtTime(Math.pow(p,3), ctx.currentTime, 0.1);
+      padhighGain.gain.setTargetAtTime(Math.pow(p,7), ctx.currentTime, 0.1); //schedule a smooth transition
+    },
+
+    stop(){
+      mainloopnode.stop();
+      padlownode.stop();
+      padmidnode.stop();
+      padhighnode.stop();
     }
   };
 }
