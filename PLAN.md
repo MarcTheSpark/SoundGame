@@ -9,9 +9,9 @@ Runtime layers, top to bottom:
 
 1. **Input** — `keydown`/`keyup` listeners track which arrow keys are
    held. The game loop reads this state each frame.
-2. **Game state** — player `{x, y, heading}`, list of enemies
-   `[{x, y, vx, vy, voice}]`, exit `{x, y, voice}`, player `health`
-   (0–1), and `status` (`playing`, `won`, `dead`). Coordinates are in
+2. **Game state** — player `{x, y, heading}`, the `voices` array
+   (enemies plus home, each remembering its own position), and a
+   `playing` flag. Coordinates are in
    meters in a single 2D floor plane (x left/right, y forward/back).
    Resonance uses a different convention — its floor is the x–z plane
    and +y is up — so game `(x, y)` maps to Resonance `(x, 0, y)`, and
@@ -20,34 +20,31 @@ Runtime layers, top to bottom:
    forward × up, which comes out backwards for those axes, so the game
    passes up as `(0, -1, 0)` (see step 6.3).
 3. **Game loop** — `requestAnimationFrame`, dt from the timestamp. Each
-   frame: read held keys, update player heading and position, integrate
-   enemy positions, check collisions, update listener position and
-   orientation, update each voice's distance-driven parameters, update
-   heartbeat from health, check win/lose.
+   frame: read held keys, update player heading and position, update
+   listener position and orientation, update each voice's
+   distance-driven parameters, check for a win.
 4. **Audio graph** — one shared `AudioContext`. Resonance Audio owns
    the output: `ResonanceAudio` scene → `ctx.destination`. Every
    sounding object is a small synth subgraph whose final node connects
    into a `scene.createSource()`. Most sources are static — their
-   position is set once with `source.setPosition(x, y, z)` — but a
-   source *can* move (enemies will; an orbit test for two voices sits
-   commented out in `tick()`); a moving source just calls
-   `setPosition` each frame. Voices are built by a `makeVoice`-style factory and kept in
+   position is set once per round with `source.setPosition(x, y, z)`.
+   Voices are built by a `makeVoice`-style factory and kept in
    an array, each exposing the same small interface (`setPosition`,
-   `getPosition`, `setActive`, `stop`) so the loop can treat them uniformly — closures,
+   `getPosition`, `setProximity`, `setActive`, `stop`) so the loop can treat them uniformly — closures,
    not classes. The listener position and orientation update every
    frame.
 
 ### Audio graph shape
 
 ```
-[enemy loop voice] ──► ResonanceAudio.Source ──┐    (moving source)
-[enemy loop voice] ──► ResonanceAudio.Source ──┤    (moving source)
-[home pad voice]   ──► ResonanceAudio.Source ──┼──► ResonanceAudio scene ──► ctx.destination
-[heartbeat voice]  ──► ResonanceAudio.Source ──┘    (room model + binaural renderer)
+[enemy loop voice] ──► ResonanceAudio.Source ──┐
+[enemy loop voice] ──► ResonanceAudio.Source ──┼──► ResonanceAudio scene ──┐
+[home voice]       ──► ResonanceAudio.Source ──┘    (room + binaural)      ├──► ctx.destination
+[win sound]  ───────────────────────────────────────────────────────────────┘    (not spatialized)
 ```
 
-The heartbeat is also spatialized, pinned to the listener's position
-so it feels internal.
+The win sound is a one-shot that isn't "in" the room, so it skips
+Resonance and goes straight to `ctx.destination`.
 
 ### Room model
 
@@ -58,7 +55,7 @@ room with reflective walls drowned far sources in non-directional
 reverb, which made them hard to localize. The open field keeps the
 direct sound dominant, and `setMaxDistance(25)` on each source sets
 how far away things can be heard. If some sense of enclosure is wanted
-later, try partially reflective walls during the polish pass (step 11).
+later, try partially reflective walls (see "Later" below).
 
 ### Listener: moving and rotating
 
@@ -84,12 +81,10 @@ ability to do it deliberately.
   an octave), which adds urgency.
 - **Exit door ("home")**: the looped `Sounds/home.mp3`. As you approach,
   a pad (`Sounds/home_averaged.wav`) fades in at three octaves, low then
-  middle then high, until it overwhelms the loop. Home blooms, where
+  middle then high, while the loop fades out. Home blooms, where
   enemies speed up. See step 7.
-- **Heartbeat** — short low-frequency thump (sine ~50 Hz with a fast
-  amp envelope), scheduled on an interval that shortens as health
-  drops. Below some health threshold, add a second irregular thump and
-  a faint high-frequency stress tone.
+- **Win sound** — a short one-shot played on reaching home, chosen or
+  made by Susie. See step 8.
 
 ## Steps
 
@@ -284,7 +279,7 @@ can confirm before moving on.
         `air-absorption.js` already does for distant sounds, so check
         far enemies too. Write down the value you chose and why: it's a
         good thing to be able to explain in an interview.
-   5. **Review checkpoint: code walkthrough** *(next)*. No new
+   5. **Review checkpoint: code walkthrough**. No new
       features. `game.js` has grown over many lessons, so before adding
       more we stop and make sure every line is clear.
       `walkthrough/` rebuilds `game.js` in twelve runnable stages, in
@@ -299,7 +294,7 @@ can confirm before moving on.
       every new line in the stage can be explained without notes. Done
       when the whole of `game.js` can be explained top to bottom,
       interview-style.
-   6. **Proximity → playback rate**. Each frame, the loop computes the
+   6. **Proximity → playback rate** *(done)*. Each frame, the loop computes the
       player-to-enemy distance and maps it to a `playbackRate` from 1×
       (at or beyond some radius) to 2× (touching). This adds one method
       to the loop voice, e.g. `setProximity(p)` with `p` from 0 to 1.
@@ -308,59 +303,101 @@ can confirm before moving on.
       than setting `.value` directly, so the rate glides instead of
       stepping. Verify by approaching an enemy: it should speed up
       and rise in pitch smoothly.
-7. **Home (exit) voice.** Home is currently one loop (`Sounds/home.mp3`,
-   `voices[4]`). As the player approaches, a pad (`Sounds/home_averaged.wav`)
-   blooms in three octave layers, low first, then middle, then high, and
-   it ends up drowning out the regular loop. Everything stays in **one**
-   Resonance source at the home position, so home remains a single object
-   in space. Inside it are four `AudioBufferSourceNode`s, each going
-   through its own `GainNode` into `source.input`:
+7. **Home (exit) voice.** One Resonance source at the home position, so
+   home stays a single object in space. Inside it are four looped
+   layers, each an `AudioBufferSourceNode` through its own `GainNode`
+   (built by `makeBufferLayer`): the main `home.mp3` loop, plus
+   `home_averaged.wav` at `playbackRate` 0.5, 1 and 2 (exact octaves).
+   As the player approaches, the pad blooms low → mid → high and the
+   main loop fades out.
+   1. **Declare `p`** *(done)*.
+   2. **Per-voice proximity range** *(done)*. `setVoiceProximities`
+      reads `voice.far ?? FAR_PROXIMITY`, so a voice can carry its own
+      range and fall back to the enemy default.
+   3. **`makeBufferLayer` and the three pad layers** *(done)*. Pad gains
+      are `p`, `p³` and `p⁷`. Raising `p` to higher powers keeps a layer
+      near silent until `p` gets close to 1, so the layers enter in
+      order, low first.
+   4. **Give home its own range.** `makeHomeVoice` doesn't set `far` or
+      `near` yet, so home only starts to bloom 3 m away. Add them to the
+      returned object (try `far: 10, near: 1`). Log `p` while walking in,
+      then tune `far` until the bloom starts at a useful distance.
+   5. **Fade out the main loop.** Route `home.mp3` through
+      `makeBufferLayer` too. It starts silent, so set it to 1 right
+      away. Then fade it in `setProximity` with a falling curve such as
+      `1 - p²`. Choose the curve by ear: when should the main loop give
+      way to the pad?
+   6. **Tune layer levels.** Scale each layer's curve by its own level
+      (for example `0.3 * p`). Four layers stack up at close range, so
+      listen for harshness or clipping as you arrive. Write down the
+      final values and why you chose them.
+   7. *(Optional.)* **`stop()` on the layer**, so `makeHomeVoice.stop()`
+      doesn't have to reach into `.bufferSourceNode`.
+8. **Rounds: random layout, win, play again.** Click Play, find home,
+   hear a win sound, and get asked to play again as many times as you
+   like. Enemies and home are placed at random each round and don't
+   move during the round.
+   1. **Random positions.** Write `randomPosition()`, which returns a
+      random `[x, y]` inside a square (try ±10 m). Use it to place the
+      enemies and home in `start()`. Add simple rules by drawing again
+      until a spot passes: home must be at least ~6 m from the start
+      point, and enemies must be at least ~2 m from the start point.
+      Reset `player` to the start position and heading at the start of
+      each round. Use the minimap to check that each Start gives a new,
+      fair layout.
+   2. **Fix restart bugs before adding a win.** Restarting doesn't work
+      cleanly yet, so fix these first:
+      - Every `start()` calls `requestAnimationFrame(tick)`, so each
+        click starts another loop running alongside the old one. Add a
+        `playing` flag. `tick` only asks for the next frame while
+        `playing` is true.
+      - `lastTime` keeps the previous round's time, so the first `dt`
+        of a new round is huge and the player jumps. Reset it at the
+        start of each round.
+      - `loadAudioBuffers()` runs on every Start and adds duplicate
+        buffers each time. Load only once, inside the `ctx == null`
+        branch.
+      Ask her to predict what each bug does before fixing it, and how to
+      confirm it (a `console.log` in `tick`, for example).
+   3. **Win check.** In `tick`, if the player is within `WIN_RADIUS` of
+      home, call `win()`. Keep `WIN_RADIUS` at or below home's `near`, so
+      the player hears the full bloom just before winning. `win()` sets
+      `playing = false` and stops the voices.
+   4. **Win sound.** Susie finds or makes a short win sound, the same way
+      she made the enemy loops. Load it with the other buffers. Play it
+      with a new `AudioBufferSourceNode` connected straight to
+      `ctx.destination` (it's a game event, not something in the room).
+      New idea: buffer source nodes play only once, so make a new one
+      every time the sound plays. The decoded buffer gets reused.
+   5. **Play again.** In `win()`, show "You found home! Play again?" and
+      relabel the Start button "Play again". `start()` already rebuilds
+      the voices, so this is mostly UI. Update the `index.html`
+      instructions (they still describe the step 1 test tone).
+   6. **Hide the minimap by default.** Give the canvas the `hidden`
+      attribute and add a "Show map" button that toggles
+      `canvas.hidden`. The game is now meant to be played by ear. The
+      map is for checking positions while debugging.
 
-   | Layer | Buffer | `playbackRate` | Gain over `p` |
-   |---|---|---|---|
-   | regular | `home.mp3` | 1 | 1 → 0 across 0.3–1.0 |
-   | pad low | `home_averaged.wav` | 0.5 | 0 → 1 across 0.0–0.5 |
-   | pad mid | `home_averaged.wav` | 1 | 0 → 1 across 0.25–0.75 |
-   | pad high | `home_averaged.wav` | 2 | 0 → 1 across 0.5–1.0 |
+That's the target for the portfolio version.
 
-   `playbackRate` 0.5 and 2 give exact octaves (as with the enemies, the
-   rate changes pitch and duration together).
-   1. **Declare `p`.** In `setVoiceProximities`, `p` is assigned but
-      never declared, so it silently becomes a global. Add `let p;`.
-   2. **Per-voice proximity range.** Enemies only matter up close
-      (`FAR_PROXIMITY = 3`), but home should start blooming from about
-      8–10 m away. Let a voice carry its own range, and fall back to the
-      shared constants when it doesn't: `voice.far ?? FAR_PROXIMITY`.
-      Verify by logging `p` while walking toward home.
-   3. **`makeHomeVoice`, two layers.** Start with just the regular loop
-      and the middle pad, crossfading on `p`. The only new idea is a
-      `GainNode` per layer, ramped with `setTargetAtTime` the same way
-      the enemies ramp `playbackRate`.
-   4. **`windowGain(p, start, end)`, all layers.** Turn the near/far
-      mapping from `setVoiceProximities` into a small reusable function
-      that maps `p` into one layer's window, then add the low and high
-      layers. Before testing, predict which layer you'll hear first.
-   5. **Tune by ear.** Adjust the window edges and each layer's level.
-      Three pad copies plus distance attenuation stack up close, so
-      give each layer a gain of about 0.3–0.4 to leave headroom.
-   6. *(Optional, if time allows.)* **Tremolo on the pad.** Add
-      amplitude modulation that deepens as you approach: an LFO through
-      a depth gain into the pad's gain `AudioParam`, as in `makeSawVoice`.
-      Proximity ramps the LFO depth.
-8. **Enemy movement.** Give the enemies simple velocities (bouncing
-   off the room bounds). Confirm the soundscape stays readable and the
-   player can still localize home through the enemies.
-9. **Collision: win + lose.** Touching an enemy = instant death (stop
-   audio, play a short lose sting). Reaching the exit = win (stop
-   audio, play a short win sting).
-10. **Health + heartbeat.** Add health state. Enemies within some
-   radius drain health over time proportional to proximity. Heartbeat
-   voice reflects health: tempo speeds up, character degrades near
-   zero. Health hitting zero = death.
-11. **Polish pass.** Tune room size, enemy speeds, damage radii,
-   heartbeat curve, and synth parameters until the game feels readable
-   and tense. Add a brief spoken or tonal intro on Start that
-   establishes where the exit is.
+## Stretch goals (later, if time allows)
+
+Roughly in order of payoff for the effort:
+
+- **Lose condition.** Touching an enemy ends the round with a lose
+  sound. It's the same distance check as the win.
+- **Tremolo on the home pad** that deepens as you approach (an LFO into
+  the pad gain, as in `makeSawVoice`).
+- **Intro cue on Start**, a short sound or spoken line that helps
+  orient the player.
+- **Enemy movement.** Simple velocities that bounce off the room
+  bounds. Then check that you can still find home through the moving
+  enemies.
+- **Health and heartbeat.** Being near an enemy drains health. A
+  heartbeat (a ~50 Hz sine thump) speeds up and gets rougher as health
+  drops. Health at zero means you lose.
+- **Room tuning.** Try partly reflective walls to give a sense of
+  being enclosed.
 
 ## Aside: faked air absorption (drop-in, independent of the steps)
 
