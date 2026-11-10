@@ -363,6 +363,24 @@ function makeLoopVoice(buffer, position = [0,0], volume = 0.5) {
   };
 }
 
+function makeBufferLayer(buffer,source, playbackRate = 1){
+  const bufferSourceNode = ctx.createBufferSource();
+  bufferSourceNode.buffer = buffer;
+  bufferSourceNode.loop = true;
+  bufferSourceNode.playbackRate.value = playbackRate;
+  const gainNode = ctx.createGain();
+  gainNode.gain.value = 0;
+  bufferSourceNode.connect(gainNode);
+  gainNode.connect(source.input);
+  bufferSourceNode.start();
+  return {
+    bufferSourceNode, 
+    setGain(g){
+      gainNode.gain.setTargetAtTime(g, ctx.currentTime, 0.1);
+    },
+  }
+}
+
 function makeHomeVoice(mainBuffer,padBuffer, position = [0,0], volume = 0.5) {
 
   const source = scene.createSource();
@@ -376,34 +394,10 @@ function makeHomeVoice(mainBuffer,padBuffer, position = [0,0], volume = 0.5) {
   mainloopnode.connect(source.input);
   mainloopnode.start();
 
-  const padlownode = ctx.createBufferSource();
-  padlownode.buffer = padBuffer;
-  padlownode.loop = true;
-  padlownode.playbackRate.value = 0.5;
-  const padlowGain = ctx.createGain();
-  padlowGain.gain.value = 0;
-  padlownode.connect(padlowGain);
-  padlowGain.connect(source.input);
-  padlownode.start();
+  const padlow = makeBufferLayer(padBuffer, source, 0.5);
+  const padmid = makeBufferLayer(padBuffer, source, 1.0);
+  const padhigh = makeBufferLayer(padBuffer, source, 2.0);
 
-  const padmidnode = ctx.createBufferSource();
-  padmidnode.buffer = padBuffer;
-  padmidnode.loop = true;
-  const padmidGain = ctx.createGain();
-  padmidGain.gain.value = 0;
-  padmidnode.connect(padmidGain);
-  padmidGain.connect(source.input);
-  padmidnode.start();
-
-  const padhighnode = ctx.createBufferSource();
-  padhighnode.buffer = padBuffer;
-  padhighnode.loop = true;
-  padhighnode.playbackRate.value = 2;
-  const padhighGain = ctx.createGain();
-  padhighGain.gain.value = 0;
-  padhighnode.connect(padhighGain);
-  padhighGain.connect(source.input);
-  padhighnode.start();
 
 
   return {
@@ -425,16 +419,16 @@ function makeHomeVoice(mainBuffer,padBuffer, position = [0,0], volume = 0.5) {
     },
 
     setProximity(p){
-      padlowGain.gain.setTargetAtTime(p, ctx.currentTime, 0.1);
-      padmidGain.gain.setTargetAtTime(Math.pow(p,3), ctx.currentTime, 0.1);
-      padhighGain.gain.setTargetAtTime(Math.pow(p,7), ctx.currentTime, 0.1); //schedule a smooth transition
+      padlow.setGain(p);
+      padmid.setGain(Math.pow(p,3));
+      padhigh.setGain(Math.pow(p,7)); //schedule a smooth transition
     },
 
     stop(){
       mainloopnode.stop();
-      padlownode.stop();
-      padmidnode.stop();
-      padhighnode.stop();
+      padlow.bufferSourceNode.stop();
+      padmid.bufferSourceNode.stop();
+      padhigh.bufferSourceNode.stop();
     }
   };
 }
