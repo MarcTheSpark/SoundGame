@@ -126,14 +126,15 @@ async function start() {
 
 
   voices.forEach((voice) => voice.stop());
-
+  const homeVoice = makeHomeVoice(audioBuffers[4],audioBuffers[5], [5.5, 7.5]);
   voices = [
     makeLoopVoice(audioBuffers[0], [-3.34, -3.74]), 
     makeLoopVoice(audioBuffers[1], [5.26, -0.78]), 
     makeLoopVoice(audioBuffers[2], [-3.8, 3.67]),
     makeLoopVoice(audioBuffers[3], [2.84, 4]),
-    makeHomeVoice(audioBuffers[4],audioBuffers[5], [5.5, 7.5]),
+    homeVoice, 
   ];
+  homeVoice.far = 8;
 
   requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
@@ -388,17 +389,10 @@ function makeHomeVoice(mainBuffer,padBuffer, position = [0,0], volume = 0.5) {
   source.setMaxDistance(25);
   source.setGain(volume);
 
-  const mainloopnode = ctx.createBufferSource();
-  mainloopnode.buffer = mainBuffer;
-  mainloopnode.loop = true;
-  mainloopnode.connect(source.input);
-  mainloopnode.start();
-
+  const mainloop = makeBufferLayer(mainBuffer, source);
   const padlow = makeBufferLayer(padBuffer, source, 0.5);
   const padmid = makeBufferLayer(padBuffer, source, 1.0);
   const padhigh = makeBufferLayer(padBuffer, source, 2.0);
-
-
 
   return {
     setPosition(x, y){
@@ -419,13 +413,14 @@ function makeHomeVoice(mainBuffer,padBuffer, position = [0,0], volume = 0.5) {
     },
 
     setProximity(p){
-      padlow.setGain(p);
-      padmid.setGain(Math.pow(p,3));
-      padhigh.setGain(Math.pow(p,7)); //schedule a smooth transition
+      mainloop.setGain(1.5 * (1 - Math.pow(p,3)));
+      padlow.setGain(0.5 * p);
+      padmid.setGain(0.35 * Math.pow(p,3));
+      padhigh.setGain(0.5 * Math.pow(p,7)); //schedule a smooth transition
     },
 
     stop(){
-      mainloopnode.stop();
+      mainloop.bufferSourceNode.stop();
       padlow.bufferSourceNode.stop();
       padmid.bufferSourceNode.stop();
       padhigh.bufferSourceNode.stop();
