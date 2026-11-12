@@ -4,8 +4,8 @@ A browser game played entirely through binaural 3D audio. The player
 navigates a room with arrow keys (tank controls — left/right rotate,
 up/down move forward/back), avoiding dissonant-sounding enemies and
 seeking a harmonious-sounding exit door. Health is conveyed through a
-heartbeat whose tempo and character degrade with damage. No visuals;
-headphones required.
+heartbeat whose tempo and character degrade with damage. Gameplay has no
+visuals (only the title and win screens do); headphones required.
 
 Built collaboratively with a student, step by step. See `PLAN.md` for
 architecture and the step-by-step build order.
@@ -61,7 +61,9 @@ You're working with Marc, who is experienced. Be direct and technical.
 
 ## Project conventions
 
-- **No build system.** Two files: `index.html` and `game.js`. Libraries
+- **No build system.** The game code is `index.html` and `game.js`.
+  `style.css` and `decor.js` hold the screen art; `minimap.js`,
+  `air-absorption.js` and `front-back.js` are drop-in helpers. Libraries
   load from CDN via `<script>` tags.
 - **One shared `AudioContext`.** Created on the Start-button click (user
   gesture required) and handed to Resonance Audio. Every audio node in

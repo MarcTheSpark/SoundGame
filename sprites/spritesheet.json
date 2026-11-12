@@ -1,0 +1,156 @@
+{
+  "image": "spritesheet.png",
+  "size": {
+    "w": 64,
+    "h": 61
+  },
+  "frames": {
+    "bunny_cute": {
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 12,
+      "note": "Title (cute draft)"
+    },
+    "bunny_zombie": {
+      "x": 17,
+      "y": 0,
+      "w": 16,
+      "h": 12,
+      "note": "Title, final: frame 1"
+    },
+    "bunny_zombie_wink": {
+      "x": 34,
+      "y": 0,
+      "w": 16,
+      "h": 12,
+      "note": "Title, final: frame 2 (pink eye closed)"
+    },
+    "bunny_crying_cute": {
+      "x": 0,
+      "y": 13,
+      "w": 16,
+      "h": 12,
+      "note": "Caught (cute draft)"
+    },
+    "bunny_crying": {
+      "x": 17,
+      "y": 13,
+      "w": 16,
+      "h": 12,
+      "note": "Caught, final"
+    },
+    "tear": {
+      "x": 34,
+      "y": 13,
+      "w": 1,
+      "h": 1,
+      "note": "Caught: falling tear"
+    },
+    "ghost_peek": {
+      "x": 36,
+      "y": 13,
+      "w": 8,
+      "h": 6,
+      "note": "Title: peeks behind PRESS START"
+    },
+    "ghost_shadow": {
+      "x": 45,
+      "y": 13,
+      "w": 14,
+      "h": 11,
+      "note": "Playing: faint ghost (draw at ~14% opacity)"
+    },
+    "ghost_fleeing": {
+      "x": 0,
+      "y": 26,
+      "w": 14,
+      "h": 13,
+      "note": "Found home: X-eyed ghost running away"
+    },
+    "lurker": {
+      "x": 15,
+      "y": 26,
+      "w": 32,
+      "h": 10,
+      "note": "Caught: eyes and fangs in the dark"
+    },
+    "house": {
+      "x": 48,
+      "y": 26,
+      "w": 12,
+      "h": 10,
+      "note": "Found home: glowing house"
+    },
+    "moon": {
+      "x": 0,
+      "y": 40,
+      "w": 8,
+      "h": 8,
+      "note": "Playing, final: moon with a pink eye"
+    },
+    "moon_cute": {
+      "x": 9,
+      "y": 40,
+      "w": 8,
+      "h": 8,
+      "note": "Playing (cute draft)"
+    },
+    "blood_splat": {
+      "x": 18,
+      "y": 40,
+      "w": 7,
+      "h": 6,
+      "note": "Title: blood splat"
+    },
+    "blood_handprint": {
+      "x": 26,
+      "y": 40,
+      "w": 10,
+      "h": 8,
+      "note": "Title: bloody handprint, top left"
+    },
+    "blood_drop": {
+      "x": 37,
+      "y": 40,
+      "w": 1,
+      "h": 1,
+      "note": "Title: falling drop (drip = 1-wide column, darker right edge #8E0F24)"
+    },
+    "watcher_eyes": {
+      "x": 39,
+      "y": 40,
+      "w": 14,
+      "h": 4,
+      "note": "Title: eyes that open bottom right"
+    },
+    "sparkle_pink": {
+      "x": 54,
+      "y": 40,
+      "w": 3,
+      "h": 3,
+      "note": "Cute draft title: sparkle star"
+    },
+    "sparkle_lavender": {
+      "x": 58,
+      "y": 40,
+      "w": 3,
+      "h": 3,
+      "note": "Cute draft title: sparkle star"
+    },
+    "icon_map": {
+      "x": 0,
+      "y": 49,
+      "w": 12,
+      "h": 12,
+      "note": "Map button icon"
+    },
+    "icon_exit": {
+      "x": 13,
+      "y": 49,
+      "w": 12,
+      "h": 12,
+      "note": "Exit button icon"
+    }
+  }
+}

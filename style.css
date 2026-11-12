@@ -1,0 +1,340 @@
+/* Lost & Sound screens. Every screen is a fixed 1280×800 canvas;
+   decor.js scales #stage to fit the window. */
+
+/* Our own display rules would otherwise override the `hidden` attribute. */
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #0A0510;
+}
+
+#stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1280px;
+  height: 800px;
+  transform-origin: center;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  font-family: 'Silkscreen', monospace;
+}
+
+/* Sprites are tiny PNGs (1 px per art pixel), blown up without blurring. */
+.sprite {
+  position: absolute;
+  display: block;
+  image-rendering: pixelated;
+}
+
+button {
+  font-family: 'Press Start 2P', monospace;
+  color: inherit;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 5px);
+}
+
+/* ---------- 1. Title ---------- */
+
+#title-screen {
+  box-sizing: border-box;
+  padding: 32px;
+  background: #0A0510;
+  color: #E9D8FF;
+}
+
+.star { position: absolute; width: 18px; height: 18px; }
+.star div { position: absolute; }
+
+.frame {
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+  background: #140A22;
+  border: 6px solid #5B2A86;
+  box-shadow: 8px 8px 0 0 #C9A5F0, inset 0 0 0 6px #2A1248;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  overflow: hidden;
+}
+
+#handprint { left: 40px; top: 110px; width: 70px; height: 56px; transform: rotate(-15deg); opacity: 0.85; }
+#splat-1 { left: 1080px; top: 90px; width: 56px; height: 48px; transform: rotate(10deg); opacity: 0.9; }
+#splat-2 { left: 180px; top: 520px; width: 42px; height: 36px; transform: rotate(40deg); opacity: 0.8; }
+#splat-3 { left: 1010px; top: 520px; width: 49px; height: 42px; transform: rotate(-30deg); opacity: 0.85; }
+#splat-4 { left: 560px; top: 600px; width: 35px; height: 30px; transform: rotate(75deg); opacity: 0.6; }
+
+.logo { display: flex; align-items: flex-end; gap: 28px; margin-top: 50px; }
+
+.word {
+  margin: 0;
+  display: flex;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 88px;
+  line-height: 1;
+  color: #E9D8FF;
+  text-shadow: 6px 6px 0 #FF9FD2;
+}
+.word > span { position: relative; display: inline-block; }
+
+.drip, .drop {
+  position: absolute;
+  width: 10px;
+  background: #C8102E;
+  box-shadow: 4px 0 0 0 #8E0F24;
+}
+.drip { top: 86px; height: var(--len); animation: drip 5s steps(8) infinite; }
+.drop { height: 10px; opacity: 0; animation: drop 5s steps(6) infinite; }
+
+.ampersand-box { position: relative; width: 132px; height: 120px; }
+/* Bunny art pixels are 7×8 screen px, as on the design canvas. */
+.bunny { position: absolute; left: 10px; top: -108px; width: 112px; height: 96px; transform: rotate(-7deg); }
+.bunny .sprite { width: 112px; height: 96px; }
+.wink { opacity: 0; animation: wink 4.5s steps(1) infinite; }
+.ampersand {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 132px;
+  text-align: center;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 96px;
+  line-height: 1;
+  color: #FF6FB5;
+  text-shadow: 6px 6px 0 #5B2A86;
+}
+
+#sound-bars { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+.bar-slot { position: relative; width: 18px; height: 120px; }
+.bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 18px;
+  box-shadow: inset 0 6px 0 0 rgba(255,255,255,0.45);
+  transform-origin: bottom;
+  animation: bar 1.3s steps(4) infinite;
+}
+.bar.rogue { animation: rogue 0.73s steps(3) infinite; }
+.bar.hang { top: 0; bottom: auto; transform-origin: top; animation: bar 1.9s steps(4) infinite; }
+
+.tagline { margin: 0; font-size: 18px; letter-spacing: 2px; color: #C9A5F0; }
+
+.start-box { position: relative; }
+.peek-window { position: absolute; right: 18px; top: -30px; width: 48px; height: 36px; overflow: hidden; }
+.peek { width: 48px; height: 36px; animation: peek 6s steps(3) infinite; }
+
+.big-button {
+  position: relative;
+  font-size: 22px;
+  padding: 20px 36px;
+  background: #FF6FB5;
+  color: #2A1248;
+  border: 6px solid #FFF7FC;
+  box-shadow: 6px 6px 0 0 #7B3FB0;
+}
+
+.watcher { right: 230px; bottom: 54px; width: 42px; height: 12px; opacity: 0; animation: eyes 7s steps(1) infinite; }
+
+.bob { animation: bob 2.2s steps(2) infinite; }
+.blink { animation: blink 1.4s steps(1) infinite; }
+.flicker { animation: flicker 3.7s steps(1) infinite; }
+.glitch { animation: glitch 5s steps(1) infinite; }
+
+/* Pixel-style press: jump in whole steps, no smooth easing. */
+.big-button, .won-button { transition: transform .08s steps(1); }
+.big-button:hover, .won-button:hover { transform: translate(-2px, -2px); }
+.big-button:active, .won-button:active { transform: translate(2px, 2px); }
+
+@keyframes bar { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+@keyframes rogue { 0%, 100% { transform: scaleY(1); } 20% { transform: scaleY(0.1); } 45% { transform: scaleY(0.9); } 60% { transform: scaleY(0.2); } }
+@keyframes bob { 0%, 100% { transform: rotate(-7deg) translateY(0); } 50% { transform: rotate(-7deg) translateY(-4px); } }
+@keyframes wink { 0%, 93%, 100% { opacity: 0; } 94%, 97% { opacity: 1; } }
+@keyframes glitch {
+  0%, 90%, 100% { transform: translate(0, 0); text-shadow: 6px 6px 0 #FF9FD2; }
+  91% { transform: translate(-6px, 2px); text-shadow: -6px 0 0 #C9A5F0, 6px 6px 0 #FF9FD2; }
+  93% { transform: translate(5px, -3px); text-shadow: 6px 0 0 #FF6FB5, 6px 6px 0 #FF9FD2; }
+  95% { transform: translate(0, 0); text-shadow: 6px 6px 0 #FF9FD2; }
+}
+@keyframes eyes { 0%, 70%, 100% { opacity: 0; } 74%, 86% { opacity: 1; } 80% { opacity: 0.2; } }
+@keyframes peek { 0%, 60%, 100% { transform: translateY(34px); } 68%, 88% { transform: translateY(0); } }
+@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes flicker { 0%, 47%, 49%, 100% { opacity: 1; } 48% { opacity: 0.25; } 83% { opacity: 0.5; } 85% { opacity: 1; } }
+@keyframes drip { 0% { height: 6px; } 70%, 100% { height: var(--len); } }
+@keyframes drop { 0%, 68% { opacity: 0; transform: translateY(0); } 72% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(70px); } }
+
+/* ---------- 2. Playing ---------- */
+
+#playing-screen { background: #140A22; color: #C9A5F0; }
+
+.night-star { position: absolute; width: 4px; height: 4px; opacity: 0.5; animation: twinkle 16s ease-in-out infinite; }
+
+#moon { left: 1080px; top: 90px; width: 64px; height: 64px; }
+#ghost-shadow { left: 40px; top: 300px; width: 140px; height: 110px; opacity: 0; animation: shadow 26s steps(1) infinite; }
+
+/* Fades to faint after a few seconds; restarts each time the screen is shown. */
+.hint {
+  position: absolute;
+  left: 0;
+  top: 340px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  animation: fade 6s ease-out forwards;
+}
+.hint p { margin: 0; letter-spacing: 2px; }
+.hint-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 28px;
+  color: #FFF7FC;
+  text-shadow: 3px 0 0 rgba(255,111,181,0.55);
+  animation: hint-glitch 9s steps(1) infinite;
+}
+.hint-sub { font-size: 18px; color: #FF9FD2; }
+
+/* Debug aids, not part of the design. */
+#minimap { position: absolute; left: 32px; top: 32px; }
+#status { position: absolute; left: 380px; top: 24px; margin: 0; font: 11px monospace; opacity: 0.5; }
+
+.controls {
+  position: absolute;
+  left: 0;
+  bottom: 36px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  font-size: 15px;
+  letter-spacing: 2px;
+}
+
+.ghost-button {
+  position: absolute;
+  bottom: 26px;
+  font-size: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: 3px solid #5B2A86;
+}
+#map-button { left: 32px; }
+#end { right: 32px; }
+
+@keyframes twinkle { 0%, 100% { opacity: 0.55; } 50% { opacity: 0.3; } }
+@keyframes fade { 0%, 55% { opacity: 1; } 100% { opacity: 0.14; } }
+@keyframes shadow { 0%, 93%, 100% { opacity: 0; } 95%, 97% { opacity: 0.14; } }
+@keyframes hint-glitch { 0%, 88%, 92%, 100% { transform: translate(0, 0); } 89% { transform: translate(-4px, 1px); } 91% { transform: translate(3px, -1px); } }
+
+/* ---------- 3. Found home ---------- */
+
+#won-screen { background: #140A22; color: #FFF7FC; }
+
+.confetti { position: absolute; top: 0; animation: fall 5s linear infinite; }
+.firework { position: absolute; width: 0; height: 0; }
+.spark {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  animation: burst 2s steps(8) infinite;
+}
+
+.boom-row { position: absolute; left: 0; top: 60px; width: 100%; display: flex; justify-content: center; }
+.boom {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 96px;
+  line-height: 1;
+  color: #FFE36E;
+  text-shadow: 6px 6px 0 #FF6FB5, 12px 12px 0 #7B3FB0;
+  animation: boom 2.4s steps(6) infinite;
+}
+
+.won-text {
+  position: absolute;
+  left: 0;
+  top: 270px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  animation: rise 0.8s steps(4) 0.4s both;
+}
+.won-text h1 {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 52px;
+  line-height: 1.2;
+  color: #FFFFFF;
+  text-shadow: 5px 5px 0 #FF6FB5;
+}
+.won-text p { margin: 0; font-size: 20px; letter-spacing: 2px; color: #FFD3EC; }
+.won-buttons { display: flex; gap: 28px; margin-top: 8px; }
+.won-button {
+  font-size: 18px;
+  padding: 18px 28px;
+  color: #2A1248;
+  border: 5px solid #FFF7FC;
+  box-shadow: 6px 6px 0 0 #7B3FB0;
+}
+#play-again { background: #FF6FB5; }
+#menu { background: #E9D8FF; }
+
+.ground { position: absolute; left: 0; bottom: 0; width: 100%; height: 40px; background: #7B3FB0; box-shadow: inset 0 8px 0 0 #9B5FD0; }
+.glow {
+  position: absolute;
+  left: 540px;
+  top: 600px;
+  width: 200px;
+  height: 170px;
+  background: #FF9FD2;
+  box-shadow: 0 0 0 20px rgba(255,159,210,0.35), 0 0 0 40px rgba(255,159,210,0.15);
+  animation: glow 1.6s steps(4) infinite;
+}
+/* House art pixels are 10×12 screen px, as on the design canvas. */
+#house { left: 580px; top: 640px; width: 120px; height: 120px; }
+
+.flee {
+  position: absolute;
+  left: 730px;
+  top: 600px;
+  --fx: 640px;
+  --fy: -170px;
+  animation: flee 3.6s steps(12) infinite;
+}
+#ghost-fleeing { position: static; width: 126px; height: 117px; animation: wobble 0.4s steps(2) infinite; }
+
+@keyframes burst { 0% { transform: translate(0, 0); opacity: 0; } 8%, 75% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+@keyframes boom { 0% { transform: scale(0) rotate(-6deg); } 15% { transform: scale(1.35) rotate(4deg); } 25% { transform: scale(0.95) rotate(-2deg); } 32%, 100% { transform: scale(1) rotate(-3deg); } }
+@keyframes flee {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  15% { transform: translate(calc(var(--fx) * -0.04), calc(var(--fy) * -0.04)) scale(1.1); opacity: 1; }
+  100% { transform: translate(var(--fx), var(--fy)) scale(0.5); opacity: 0; }
+}
+@keyframes wobble { 0%, 100% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+@keyframes glow { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.12); } }
+@keyframes fall { 0% { transform: translateY(-60px) rotate(0deg); } 100% { transform: translateY(860px) rotate(540deg); } }
+@keyframes rise { 0% { transform: translateY(40px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; }
+}

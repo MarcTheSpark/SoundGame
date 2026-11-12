@@ -318,39 +318,48 @@ can confirm before moving on.
       are `p`, `p³` and `p⁷`. Raising `p` to higher powers keeps a layer
       near silent until `p` gets close to 1, so the layers enter in
       order, low first.
-   4. **Give home its own range.** `makeHomeVoice` doesn't set `far` or
-      `near` yet, so home only starts to bloom 3 m away. Add them to the
-      returned object (try `far: 10, near: 1`). Log `p` while walking in,
-      then tune `far` until the bloom starts at a useful distance.
-   5. **Fade out the main loop.** Route `home.mp3` through
-      `makeBufferLayer` too. It starts silent, so set it to 1 right
-      away. Then fade it in `setProximity` with a falling curve such as
-      `1 - p²`. Choose the curve by ear: when should the main loop give
-      way to the pad?
-   6. **Tune layer levels.** Scale each layer's curve by its own level
-      (for example `0.3 * p`). Four layers stack up at close range, so
-      listen for harshness or clipping as you arrive. Write down the
-      final values and why you chose them.
+   4. **Give home its own range** *(done)*. `homeVoice.far = 8`.
+   5. **Fade out the main loop** *(done)*. `home.mp3` goes through
+      `makeBufferLayer` and fades with `1 - p³`.
+   6. **Tune layer levels** *(done)*.
    7. *(Optional.)* **`stop()` on the layer**, so `makeHomeVoice.stop()`
       doesn't have to reach into `.bufferSourceNode`.
 8. **Rounds: random layout, win, play again.** Click Play, find home,
    hear a win sound, and get asked to play again as many times as you
    like. Enemies and home are placed at random each round and don't
    move during the round.
-   1. **Random positions.** Write `randomPosition()`, which returns a
-      random `[x, y]` inside a square (try ±10 m). Use it to place the
-      enemies and home in `start()`. Add simple rules by drawing again
-      until a spot passes: home must be at least ~6 m from the start
-      point, and enemies must be at least ~2 m from the start point.
-      Reset `player` to the start position and heading at the start of
-      each round. Use the minimap to check that each Start gives a new,
-      fair layout.
-   2. **Fix restart bugs before adding a win.** Restarting doesn't work
-      cleanly yet, so fix these first:
+   1. **Screens: title and playing.** Comes first because the minimap
+      and status line now live on the playing screen, which stays hidden
+      until `showScreen` exists. Susie's art is already built (Marc +
+      Claude). `index.html` has three `<section class="screen">`
+      elements: title, playing and won. `style.css` holds her design,
+      and every animation is a CSS `@keyframes`. `decor.js` builds the
+      repeated pieces (stars, sound bars, confetti, fireworks) and
+      scales the page to the window. She reads these files but doesn't
+      write them. Only one screen shows at a time, and the others carry
+      the `hidden` attribute.
+      1. **Tour (~20 min).** In DevTools, toggle `hidden` on each
+         section by hand. Find one sprite's rule in `style.css` and
+         change it, predicting the result first. In `decor.js`, find
+         `addBlock` and one place that uses it. Ask why
+         `image-rendering: pixelated` is there, and what
+         `[hidden] { display: none !important }` fixes.
+      2. **`showScreen(id)`.** Loop over
+         `document.querySelectorAll('.screen')` and set
+         `screen.hidden = screen.id !== id`. Ask her to predict what
+         happens if the id has a typo.
+      3. **Wire it up.** `start()` shows `playing-screen`. EXIT (`#end`)
+         calls `end()` and returns to `title-screen`. Delete the
+         leftover step 1 `setStatus` test-tone message. EXIT then Start
+         is now an easy way to restart, which is the next step's test.
+   2. **Fix restart bugs.** Testing random layouts means clicking
+      Start over and over, and restarting doesn't work cleanly yet:
       - Every `start()` calls `requestAnimationFrame(tick)`, so each
         click starts another loop running alongside the old one. Add a
         `playing` flag. `tick` only asks for the next frame while
-        `playing` is true.
+        `playing` is true, `end()` sets it false, and `start()` only
+        calls `requestAnimationFrame(tick)` if a loop isn't already
+        running.
       - `lastTime` keeps the previous round's time, so the first `dt`
         of a new round is huge and the player jumps. Reset it at the
         start of each round.
@@ -359,24 +368,56 @@ can confirm before moving on.
         branch.
       Ask her to predict what each bug does before fixing it, and how to
       confirm it (a `console.log` in `tick`, for example).
-   3. **Win check.** In `tick`, if the player is within `WIN_RADIUS` of
-      home, call `win()`. Keep `WIN_RADIUS` at or below home's `near`, so
-      the player hears the full bloom just before winning. `win()` sets
-      `playing = false` and stops the voices.
-   4. **Win sound.** Susie finds or makes a short win sound, the same way
+   3. **Random positions.** Each voice gets a set distance from the start
+      point and a random direction. Every round is then about as hard as
+      the last (home is always the same walk away), and "not too close
+      to the start" holds automatically, with no draw-and-retry loop.
+      Enemies get small distance ranges so layouts don't feel the same
+      each round. Home gets a fixed distance.
+      1. **`START` and the distance table.** Add a
+         `START = { x: 0, y: 0, heading: Math.PI / 2 }` constant, plus
+         `ENEMY_DISTANCES = [[3.5, 5], [6, 7.5], [7.5, 9], [9.5, 11]]`
+         and `HOME_DISTANCE = 13`. Reset `player` from `START` at the
+         top of `start()`. Setting `x`, `y` and `heading` one at a time
+         avoids introducing spread syntax.
+      2. **`randomBetween(min, max)`.** A one-line warm-up.
+      3. **`positionAround(distance, angle)`** returns `[x, y]` that far
+         from `START` in that direction. Before she writes it, ask her to
+         predict the formula from her forward-movement code in `tick`.
+         It's the same `cos`/`sin`.
+      4. **`getEnemyPositions()`** loops over `ENEMY_DISTANCES` and
+         returns four `[x, y]` pairs (random distance in range, random
+         angle). It returns positions, not voices, so placement stays
+         separate from sound, and she can run it in the console before
+         any audio is involved. In `start()`, pass `enemyPositions[i]`
+         to each `makeLoopVoice`, and place home inline with
+         `positionAround(HOME_DISTANCE, randomBetween(0, 2 * Math.PI))`.
+         Use `range[0]`/`range[1]` rather than destructuring unless she
+         asks. Check on the minimap that each Start gives a new layout.
+      5. *(Optional.)* **Spread the enemies out.** With independent
+         angles, enemies can cluster or overlap. Wait until she hears it.
+         The fix is to pick one random `baseAngle` before the loop, then
+         use `baseAngle + i * Math.PI / 2 + randomBetween(-0.5, 0.5)`.
+         This needs the loop index `i`, so it's a classic `for` loop or
+         `forEach((range, i) => ...)`.
+   4. **Win check and won screen.** In `tick`, if the player is within
+      `WIN_RADIUS` of home, call `win()`. Keep `WIN_RADIUS` at or below
+      home's `near`, so the player hears the full bloom just before
+      winning. `win()` sets `playing = false`, stops the voices and shows
+      `won-screen`. Wire `#play-again` to `start` and `#menu` to show
+      `title-screen`.
+   5. **Win sound.** Susie finds or makes a short win sound, the same way
       she made the enemy loops. Load it with the other buffers. Play it
       with a new `AudioBufferSourceNode` connected straight to
       `ctx.destination` (it's a game event, not something in the room).
       New idea: buffer source nodes play only once, so make a new one
       every time the sound plays. The decoded buffer gets reused.
-   5. **Play again.** In `win()`, show "You found home! Play again?" and
-      relabel the Start button "Play again". `start()` already rebuilds
-      the voices, so this is mostly UI. Update the `index.html`
-      instructions (they still describe the step 1 test tone).
-   6. **Hide the minimap by default.** Give the canvas the `hidden`
-      attribute and add a "Show map" button that toggles
-      `canvas.hidden`. The game is now meant to be played by ear. The
-      map is for checking positions while debugging.
+   6. **Map toggle.** Give `#minimap` the `hidden` attribute. The M key
+      and `#map-button` flip `canvas.hidden`. The game is meant to be
+      played by ear, and the map is a debugging aid. Teaching point:
+      this is the one key handled directly in `keydown` rather than in
+      `tick`. It's a one-off toggle, not a held key, so checking it every
+      frame would flicker. Ignore `e.repeat`.
 
 That's the target for the portfolio version.
 

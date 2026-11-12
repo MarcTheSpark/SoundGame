@@ -2,26 +2,134 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Audio Game</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 36rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; }
-    button { font-size: 1.1rem; padding: 0.6rem 1.2rem; }
-    #status { margin-top: 1rem; color: #555; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lost &amp; Sound</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Audio Game</h1>
-  <p><strong>Put on headphones.</strong> This game is played entirely by ear.</p>
-  <p>Step 1 test: clicking Start should play a tone that sounds like it's coming from your <em>right</em>.</p>
-  <button id="start">Start</button>
-  <button id="end">End</button>
-  <p id="status"></p>
+<div id="stage">
 
-  <canvas id="minimap" width="320" height="320"></canvas>
-  <script src="minimap.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/resonance-audio/build/resonance-audio.min.js"></script>
-  <script src="air-absorption.js"></script>
-  <script src="front-back.js"></script>
-  <script src="game.js"></script>
+  <!-- 1. Title -->
+  <section class="screen" id="title-screen">
+    <div id="title-stars" aria-hidden="true"></div>
+    <div class="frame">
+      <img class="sprite" id="handprint" src="sprites/1x/blood_handprint.png" alt="">
+      <img class="sprite splat" id="splat-1" src="sprites/1x/blood_splat.png" alt="">
+      <img class="sprite splat" id="splat-2" src="sprites/1x/blood_splat.png" alt="">
+      <img class="sprite splat" id="splat-3" src="sprites/1x/blood_splat.png" alt="">
+      <img class="sprite splat" id="splat-4" src="sprites/1x/blood_splat.png" alt="">
+
+      <div class="logo">
+        <h1 class="word">
+          <span style="transform: rotate(-5deg) translateY(4px)">L
+            <span class="drip" style="left: 10px; --len: 46px"></span>
+            <span class="drop" style="left: 10px; top: 132px"></span>
+          </span>
+          <span style="transform: translateY(10px) rotate(4deg)">O</span>
+          <span style="transform: translateY(-6px)">S
+            <span class="drip" style="left: 46px; --len: 30px; animation-delay: -2s"></span>
+          </span>
+          <span style="transform: rotate(8deg) translateY(2px)">T
+            <span class="drip" style="left: 40px; --len: 62px; animation-delay: -4s"></span>
+            <span class="drop" style="left: 40px; top: 148px; animation-delay: -4s"></span>
+          </span>
+        </h1>
+        <div class="ampersand-box">
+          <div class="bunny bob">
+            <img class="sprite" src="sprites/1x/bunny_zombie.png" alt="Zombie bunny">
+            <img class="sprite wink" src="sprites/1x/bunny_zombie_wink.png" alt="">
+          </div>
+          <div class="ampersand flicker">&amp;</div>
+        </div>
+        <h1 class="word glitch">
+          <span style="transform: translateY(-4px) rotate(-3deg)">S</span>
+          <span style="transform: translateY(6px)">O
+            <span class="drip" style="left: 38px; --len: 54px; animation-delay: -3.4s"></span>
+            <span class="drop" style="left: 38px; top: 140px; animation-delay: -3.4s"></span>
+          </span>
+          <span style="transform: rotate(180deg) translateY(-6px)">U</span>
+          <span style="transform: translateY(-2px) rotate(5deg)">N
+            <span class="drip" style="left: 60px; --len: 38px; animation-delay: -2.6s"></span>
+          </span>
+          <span style="transform: translateY(8px) rotate(-6deg)">D
+            <span class="drip" style="left: 20px; --len: 24px; animation-delay: -1s"></span>
+          </span>
+        </h1>
+      </div>
+
+      <div id="sound-bars" aria-hidden="true"></div>
+
+      <p class="tagline">close your eyes, put on your headphones and...</p>
+
+      <div class="start-box">
+        <div class="peek-window" aria-hidden="true">
+          <img class="sprite peek" src="sprites/1x/ghost_peek.png" alt="">
+        </div>
+        <button id="start" class="big-button"><span class="blink">▶</span> PRESS START</button>
+      </div>
+
+      <img class="sprite watcher" src="sprites/1x/watcher_eyes.png" alt="">
+      <div class="scanlines"></div>
+    </div>
+  </section>
+
+  <!-- 2. Playing -->
+  <section class="screen" id="playing-screen" hidden>
+    <div id="night-stars" aria-hidden="true"></div>
+    <img class="sprite" id="moon" src="sprites/1x/moon.png" alt="">
+    <img class="sprite" id="ghost-shadow" src="sprites/1x/ghost_shadow.png" alt="">
+
+    <div class="hint">
+      <p class="hint-title">close your eyes</p>
+      <p class="hint-sub">listen for home · don't let them hear you</p>
+    </div>
+
+    <canvas id="minimap" width="320" height="320"></canvas>
+    <p id="status"></p>
+
+    <div class="controls">
+      <span>↑ ↓ walk</span>
+      <span>← → turn</span>
+      <span>M map</span>
+    </div>
+    <button id="map-button" class="ghost-button" aria-label="Show map">MAP</button>
+    <button id="end" class="ghost-button" aria-label="Quit to title">EXIT</button>
+    <div class="scanlines"></div>
+  </section>
+
+  <!-- 3. Found home -->
+  <section class="screen" id="won-screen" hidden>
+    <div id="confetti" aria-hidden="true"></div>
+    <div id="fireworks" aria-hidden="true"></div>
+
+    <div class="boom-row"><div class="boom">BOOM!</div></div>
+
+    <div class="won-text">
+      <h1>YOU MADE IT HOME!</h1>
+      <p>the ghost runs · the light is on · you are safe (for now)</p>
+      <div class="won-buttons">
+        <button id="play-again" class="won-button">▶ PLAY AGAIN</button>
+        <button id="menu" class="won-button">MENU</button>
+      </div>
+    </div>
+
+    <div class="ground"></div>
+    <div class="glow"></div>
+    <img class="sprite" id="house" src="sprites/1x/house.png" alt="Glowing home">
+    <div class="flee">
+      <img class="sprite" id="ghost-fleeing" src="sprites/1x/ghost_fleeing.png" alt="Ghost running away">
+    </div>
+  </section>
+
+</div>
+
+<script src="decor.js"></script>
+<script src="minimap.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/resonance-audio/build/resonance-audio.min.js"></script>
+<script src="air-absorption.js"></script>
+<script src="front-back.js"></script>
+<script src="game.js"></script>
 </body>
 </html>
