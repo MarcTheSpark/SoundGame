@@ -2,6 +2,7 @@
 let ctx, scene, voices = [], statusBox;
 let keys = {};
 let audioBuffers = [];
+let playing = false;
 
 // heading is in radians from +x; π/2 faces +y (forward)
 let player = { x: 0, y: -2, heading: Math.PI / 2};
@@ -85,7 +86,9 @@ function tick(now) {
 
   drawMinimap(player, voices, 4); // 4 = homeIndex, which voice is the home sound
 
-  requestAnimationFrame(tick);
+  if(playing){
+    requestAnimationFrame(tick);
+  }
 }
 
 function setVoiceProximities(){
@@ -135,11 +138,16 @@ async function start() {
     homeVoice, 
   ];
   homeVoice.far = 8;
+  
+  if(!playing){
+    playing = true;
+    requestAnimationFrame(tick);
+  }
 
-  requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
 
   showScreen('playing-screen');
+
 }
 
 async function loadAudioBuffers(){
@@ -449,4 +457,5 @@ function makeHomeVoice(mainBuffer,padBuffer, position = [0,0], volume = 0.5) {
 function end(){
   voices.forEach((voice) => voice.stop());
   showScreen('title-screen');
+  playing = false;
 }
