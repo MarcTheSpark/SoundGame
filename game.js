@@ -141,10 +141,9 @@ async function start() {
   
   if(!playing){
     playing = true;
+    lastTime = null;
     requestAnimationFrame(tick);
   }
-
-  setStatus('Playing test tone — should sound like it is on your right.');
 
   showScreen('playing-screen');
 
