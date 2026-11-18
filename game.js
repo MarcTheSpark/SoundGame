@@ -16,7 +16,7 @@ const NEAR_PROXIMITY = 0.5;
 const FAR_PROXIMITY = 3;
 
 
-
+document.getElementById('map-button').addEventListener('click', toggleMinimap);
 document.getElementById('start').addEventListener('click', start);
 document.getElementById('end').addEventListener('click', end);
 
@@ -138,6 +138,8 @@ async function start() {
 
   requestAnimationFrame(tick);
   setStatus('Playing test tone — should sound like it is on your right.');
+
+  showScreen('playing-screen');
 }
 
 async function loadAudioBuffers(){
@@ -154,6 +156,21 @@ async function loadAudioBuffers(){
 
 function setStatus(statusText) {
   statusBox.textContent = statusText;
+}
+
+function showScreen(id){
+  for(const page of document.querySelectorAll('.screen')){
+    if(page.id === id){
+      page.hidden = false;
+    }else{
+      page.hidden = true;
+    }
+  }
+}
+
+function toggleMinimap(){
+  const minimap = document.getElementById('minimap');
+  minimap.hidden = !minimap.hidden;
 }
 
 function setup() {
@@ -431,4 +448,5 @@ function makeHomeVoice(mainBuffer,padBuffer, position = [0,0], volume = 0.5) {
 
 function end(){
   voices.forEach((voice) => voice.stop());
+  showScreen('title-screen');
 }
