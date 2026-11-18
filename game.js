@@ -124,8 +124,8 @@ async function start() {
   if (ctx == null) {
     // first Start click: create the AudioContext and scene
     setup();
+    await loadAudioBuffers();
   }
-  await loadAudioBuffers();
 
 
   voices.forEach((voice) => voice.stop());
